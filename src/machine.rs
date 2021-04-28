@@ -99,7 +99,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
                 Ok(true)
             }
             Ok((bytecode::CMD_DISCARD, _)) => {
-                debug!("SWAP");
+                debug!("DISCARD");
                 self.discard()?;
                 Ok(true)
             }
@@ -139,7 +139,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
                 Ok(true)
             }
             Ok((bytecode::CMD_RETRIEVE, _)) => {
-                debug!("RETREIVE");
+                debug!("RETRIEVE");
                 self.retrieve()?;
                 Ok(true)
             }
