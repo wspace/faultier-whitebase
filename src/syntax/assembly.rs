@@ -1,6 +1,6 @@
 //! Assembler and Disassembler.
 
-use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
+use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError, Write};
 
 use bytecode;
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -28,7 +28,11 @@ impl Assembly {
 }
 
 impl Compiler for Assembly {
-    fn compile<B: Buffer, W: ByteCodeWriter>(&self, input: &mut B, output: &mut W) -> IoResult<()> {
+    fn compile<B: BufRead, W: ByteCodeWriter>(
+        &self,
+        input: &mut B,
+        output: &mut W,
+    ) -> io::Result<()> {
         loop {
             let ret = match input.read_line() {
                 Ok(line) => {
@@ -86,11 +90,11 @@ impl Compiler for Assembly {
 }
 
 impl Decompiler for Assembly {
-    fn decompile<R: ByteCodeReader, W: Writer>(
+    fn decompile<R: ByteCodeReader, W: Write>(
         &self,
         input: &mut R,
         output: &mut W,
-    ) -> IoResult<()> {
+    ) -> io::Result<()> {
         loop {
             let res = match input.read_inst() {
                 Ok((bytecode::CMD_PUSH, n)) => write!(output, "PUSH {}\n", n),

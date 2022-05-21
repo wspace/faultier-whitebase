@@ -1,6 +1,6 @@
 //! Bytecode utilities.
 
-use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
+use std::io::{self, standard_error, EndOfFile, InvalidInput, IoError, Read, Seek, Write};
 
 use ir;
 use ir::Instruction;
@@ -39,63 +39,65 @@ pub const CMD_GETN: u8 = IMP_IO + 0b1010;
 /// Bytecodes writer.
 pub trait ByteCodeWriter {
     /// Compile a instruction to bytecodes.
-    fn assemble<I: Iterator<Item = IoResult<Instruction>>>(&mut self, iter: &mut I)
-        -> IoResult<()>;
-    /// Writes a push instruction.
-    fn write_push(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a duplicate instruction.
-    fn write_dup(&mut self) -> IoResult<()>;
-    /// Writes a copy instruction.
-    fn write_copy(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a swap instruction.
-    fn write_swap(&mut self) -> IoResult<()>;
-    /// Writes a discard instruction.
-    fn write_discard(&mut self) -> IoResult<()>;
-    /// Writes a slide instruction.
-    fn write_slide(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a addition instruction.
-    fn write_add(&mut self) -> IoResult<()>;
-    /// Writes a subtraction instruction.
-    fn write_sub(&mut self) -> IoResult<()>;
-    /// Writes a multiplication instruction.
-    fn write_mul(&mut self) -> IoResult<()>;
-    /// Writes a division instruction.
-    fn write_div(&mut self) -> IoResult<()>;
-    /// Writes a modulo instruction.
-    fn write_mod(&mut self) -> IoResult<()>;
-    /// Writes a store instruction.
-    fn write_store(&mut self) -> IoResult<()>;
-    /// Writes a retrieve instruction.
-    fn write_retrieve(&mut self) -> IoResult<()>;
-    /// Writes a mark instruction.
-    fn write_mark(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a call instruction.
-    fn write_call(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a jump instruction.
-    fn write_jump(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a conditional jump instruction.
-    fn write_jumpz(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a conditional jump instruction.
-    fn write_jumpn(&mut self, n: i64) -> IoResult<()>;
-    /// Writes a return instruction.
-    fn write_return(&mut self) -> IoResult<()>;
-    /// Writes a exit instruction.
-    fn write_exit(&mut self) -> IoResult<()>;
-    /// Writes a character put instruction.
-    fn write_putc(&mut self) -> IoResult<()>;
-    /// Writes a number put instruction.
-    fn write_putn(&mut self) -> IoResult<()>;
-    /// Writes a character get instruction.
-    fn write_getc(&mut self) -> IoResult<()>;
-    /// Writes a number get instruction.
-    fn write_getn(&mut self) -> IoResult<()>;
-}
-
-impl<W: Writer> ByteCodeWriter for W {
-    fn assemble<I: Iterator<Item = IoResult<Instruction>>>(
+    fn assemble<I: Iterator<Item = io::Result<Instruction>>>(
         &mut self,
         iter: &mut I,
-    ) -> IoResult<()> {
+    ) -> io::Result<()>;
+    /// Writes a push instruction.
+    fn write_push(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a duplicate instruction.
+    fn write_dup(&mut self) -> io::Result<()>;
+    /// Writes a copy instruction.
+    fn write_copy(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a swap instruction.
+    fn write_swap(&mut self) -> io::Result<()>;
+    /// Writes a discard instruction.
+    fn write_discard(&mut self) -> io::Result<()>;
+    /// Writes a slide instruction.
+    fn write_slide(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a addition instruction.
+    fn write_add(&mut self) -> io::Result<()>;
+    /// Writes a subtraction instruction.
+    fn write_sub(&mut self) -> io::Result<()>;
+    /// Writes a multiplication instruction.
+    fn write_mul(&mut self) -> io::Result<()>;
+    /// Writes a division instruction.
+    fn write_div(&mut self) -> io::Result<()>;
+    /// Writes a modulo instruction.
+    fn write_mod(&mut self) -> io::Result<()>;
+    /// Writes a store instruction.
+    fn write_store(&mut self) -> io::Result<()>;
+    /// Writes a retrieve instruction.
+    fn write_retrieve(&mut self) -> io::Result<()>;
+    /// Writes a mark instruction.
+    fn write_mark(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a call instruction.
+    fn write_call(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a jump instruction.
+    fn write_jump(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a conditional jump instruction.
+    fn write_jumpz(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a conditional jump instruction.
+    fn write_jumpn(&mut self, n: i64) -> io::Result<()>;
+    /// Writes a return instruction.
+    fn write_return(&mut self) -> io::Result<()>;
+    /// Writes a exit instruction.
+    fn write_exit(&mut self) -> io::Result<()>;
+    /// Writes a character put instruction.
+    fn write_putc(&mut self) -> io::Result<()>;
+    /// Writes a number put instruction.
+    fn write_putn(&mut self) -> io::Result<()>;
+    /// Writes a character get instruction.
+    fn write_getc(&mut self) -> io::Result<()>;
+    /// Writes a number get instruction.
+    fn write_getn(&mut self) -> io::Result<()>;
+}
+
+impl<W: Write> ByteCodeWriter for W {
+    fn assemble<I: Iterator<Item = io::Result<Instruction>>>(
+        &mut self,
+        iter: &mut I,
+    ) -> io::Result<()> {
         for inst in *iter {
             match inst {
                 Ok(ir::StackPush(n)) => self.write_push(n),
@@ -128,107 +130,107 @@ impl<W: Writer> ByteCodeWriter for W {
         Ok(())
     }
 
-    fn write_push(&mut self, n: i64) -> IoResult<()> {
+    fn write_push(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_PUSH)?;
         self.write_be_i64(n)
     }
 
-    fn write_dup(&mut self) -> IoResult<()> {
+    fn write_dup(&mut self) -> io::Result<()> {
         self.write_u8(CMD_DUP)
     }
 
-    fn write_copy(&mut self, n: i64) -> IoResult<()> {
+    fn write_copy(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_COPY)?;
         self.write_be_i64(n)
     }
 
-    fn write_swap(&mut self) -> IoResult<()> {
+    fn write_swap(&mut self) -> io::Result<()> {
         self.write_u8(CMD_SWAP)
     }
 
-    fn write_discard(&mut self) -> IoResult<()> {
+    fn write_discard(&mut self) -> io::Result<()> {
         self.write_u8(CMD_DISCARD)
     }
 
-    fn write_slide(&mut self, n: i64) -> IoResult<()> {
+    fn write_slide(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_SLIDE)?;
         self.write_be_i64(n)
     }
 
-    fn write_add(&mut self) -> IoResult<()> {
+    fn write_add(&mut self) -> io::Result<()> {
         self.write_u8(CMD_ADD)
     }
 
-    fn write_sub(&mut self) -> IoResult<()> {
+    fn write_sub(&mut self) -> io::Result<()> {
         self.write_u8(CMD_SUB)
     }
 
-    fn write_mul(&mut self) -> IoResult<()> {
+    fn write_mul(&mut self) -> io::Result<()> {
         self.write_u8(CMD_MUL)
     }
 
-    fn write_div(&mut self) -> IoResult<()> {
+    fn write_div(&mut self) -> io::Result<()> {
         self.write_u8(CMD_DIV)
     }
 
-    fn write_mod(&mut self) -> IoResult<()> {
+    fn write_mod(&mut self) -> io::Result<()> {
         self.write_u8(CMD_MOD)
     }
 
-    fn write_store(&mut self) -> IoResult<()> {
+    fn write_store(&mut self) -> io::Result<()> {
         self.write_u8(CMD_STORE)
     }
 
-    fn write_retrieve(&mut self) -> IoResult<()> {
+    fn write_retrieve(&mut self) -> io::Result<()> {
         self.write_u8(CMD_RETRIEVE)
     }
 
-    fn write_mark(&mut self, n: i64) -> IoResult<()> {
+    fn write_mark(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_MARK)?;
         self.write_be_i64(n)
     }
 
-    fn write_call(&mut self, n: i64) -> IoResult<()> {
+    fn write_call(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_CALL)?;
         self.write_be_i64(n)
     }
 
-    fn write_jump(&mut self, n: i64) -> IoResult<()> {
+    fn write_jump(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_JUMP)?;
         self.write_be_i64(n)
     }
 
-    fn write_jumpz(&mut self, n: i64) -> IoResult<()> {
+    fn write_jumpz(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_JUMPZ)?;
         self.write_be_i64(n)
     }
 
-    fn write_jumpn(&mut self, n: i64) -> IoResult<()> {
+    fn write_jumpn(&mut self, n: i64) -> io::Result<()> {
         self.write_u8(CMD_JUMPN)?;
         self.write_be_i64(n)
     }
 
-    fn write_return(&mut self) -> IoResult<()> {
+    fn write_return(&mut self) -> io::Result<()> {
         self.write_u8(CMD_RETURN)
     }
 
-    fn write_exit(&mut self) -> IoResult<()> {
+    fn write_exit(&mut self) -> io::Result<()> {
         self.write_u8(CMD_EXIT)
     }
 
-    fn write_putn(&mut self) -> IoResult<()> {
+    fn write_putn(&mut self) -> io::Result<()> {
         self.write_u8(CMD_PUTN)
     }
 
-    fn write_putc(&mut self) -> IoResult<()> {
+    fn write_putc(&mut self) -> io::Result<()> {
         self.write_u8(CMD_PUTC)
     }
 
-    fn write_getc(&mut self) -> IoResult<()> {
+    fn write_getc(&mut self) -> io::Result<()> {
         self.write_u8(CMD_GETC)
     }
 
-    fn write_getn(&mut self) -> IoResult<()> {
+    fn write_getn(&mut self) -> io::Result<()> {
         self.write_u8(CMD_GETN)
     }
 }
@@ -239,7 +241,7 @@ pub struct Instructions<'r, T> {
 }
 
 impl<'r, B: ByteCodeReader> Iterator for Instructions<'r, B> {
-    type Item = IoResult<Instruction>;
+    type Item = io::Result<Instruction>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.reader.read_inst() {
@@ -277,28 +279,28 @@ impl<'r, B: ByteCodeReader> Iterator for Instructions<'r, B> {
 }
 
 /// Bytecodes reader.
-pub trait ByteCodeReader: Reader + Seek {
+pub trait ByteCodeReader: Read + Seek {
     /// Read the next instruction bytes from the underlying stream.
     ///
     /// # Error
     ///
     /// If an I/O error occurs, or EOF, then this function will return `Err`.
-    fn read_inst(&mut self) -> IoResult<(u8, i64)>;
+    fn read_inst(&mut self) -> io::Result<(u8, i64)>;
 
     /// Create an iterator that convert to IR from bytes on each iteration
     /// until EOF.
     ///
     /// # Error
     ///
-    /// Any error other than `EndOfFile` that is produced by the underlying Reader
+    /// Any error other than `EndOfFile` that is produced by the underlying `Read`er
     /// is returned by the iterator and should be handled by the caller.
     fn disassemble<'r>(&'r mut self) -> Instructions<'r, Self> {
         Instructions { reader: self }
     }
 }
 
-impl<R: Reader + Seek> ByteCodeReader for R {
-    fn read_inst(&mut self) -> IoResult<(u8, i64)> {
+impl<R: Read + Seek> ByteCodeReader for R {
+    fn read_inst(&mut self) -> io::Result<(u8, i64)> {
         match self.read_u8() {
             Ok(n)
                 if n == CMD_PUSH
@@ -320,7 +322,7 @@ impl<R: Reader + Seek> ByteCodeReader for R {
 
 #[cfg(test)]
 mod test {
-    use std::io::{IoResult, MemReader, MemWriter};
+    use std::io::{self, MemReader, MemWriter};
 
     use super::{ByteCodeReader, ByteCodeWriter};
     use ir;
@@ -384,7 +386,7 @@ mod test {
     fn test_assemble() {
         let mut writer = MemWriter::new();
         {
-            let vec: Vec<IoResult<ir::Instruction>> = vec![
+            let vec: Vec<io::Result<ir::Instruction>> = vec![
                 Ok(ir::StackPush(1)),
                 Ok(ir::StackDuplicate),
                 Ok(ir::StackCopy(2)),

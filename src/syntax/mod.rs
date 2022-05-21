@@ -6,24 +6,28 @@ pub use self::dt::DT;
 pub use self::ook::Ook;
 pub use self::whitespace::Whitespace;
 
-use std::io::IoResult;
+use std::io::{self, BufRead, Write};
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
 
 /// Convert from source code to bytecodes.
 pub trait Compiler {
     /// Convert from source code to bytecodes.
-    fn compile<B: Buffer, W: ByteCodeWriter>(&self, input: &mut B, output: &mut W) -> IoResult<()>;
+    fn compile<B: BufRead, W: ByteCodeWriter>(
+        &self,
+        input: &mut B,
+        output: &mut W,
+    ) -> io::Result<()>;
 }
 
 /// Generate source code from bytecods.
 pub trait Decompiler {
     /// Generate source code from bytecods.
-    fn decompile<R: ByteCodeReader, W: Writer>(
+    fn decompile<R: ByteCodeReader, W: Write>(
         &self,
         input: &mut R,
         output: &mut W,
-    ) -> IoResult<()>;
+    ) -> io::Result<()>;
 }
 
 pub mod assembly;

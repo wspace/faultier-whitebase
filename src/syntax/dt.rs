@@ -1,6 +1,6 @@
 //! Parser and Generator for DT.
 
-use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
+use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError, Write};
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
 use ir;
@@ -15,14 +15,14 @@ struct Tokens<T> {
     lexemes: T,
 }
 
-impl<I: Iterator<Item = IoResult<String>>> Tokens<I> {
+impl<I: Iterator<Item = io::Result<String>>> Tokens<I> {
     pub fn parse(self) -> Instructions<Tokens<I>> {
         Instructions::new(self)
     }
 }
 
-impl<I: Iterator<Item = IoResult<String>>> Iterator for Tokens<I> {
-    type Item = IoResult<Token>;
+impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
+    type Item = io::Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let op = self.lexemes.next();
@@ -49,14 +49,14 @@ struct Scan<'r, T> {
     buffer: &'r mut T,
 }
 
-impl<'r, B: Buffer> Scan<'r, B> {
+impl<'r, B: BufRead> Scan<'r, B> {
     pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
         Tokens { lexemes: self }
     }
 }
 
-impl<'r, B: Buffer> Iterator for Scan<'r, B> {
-    type Item = IoResult<String>;
+impl<'r, B: BufRead> Iterator for Scan<'r, B> {
+    type Item = io::Result<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
         'outer: loop {
@@ -86,7 +86,7 @@ impl<'r, B: Buffer> Iterator for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
+fn scan<'r, B: BufRead>(buffer: &'r mut B) -> Scan<'r, B> {
     Scan { buffer: buffer }
 }
 
@@ -100,12 +100,12 @@ impl DT {
     }
 
     #[inline]
-    fn write<W: Writer>(&self, output: &mut W, inst: &[&'static str]) -> IoResult<()> {
+    fn write<W: Write>(&self, output: &mut W, inst: &[&'static str]) -> io::Result<()> {
         write!(output, "{}", inst.concat())
     }
 
     #[inline]
-    fn write_num<W: Writer>(&self, output: &mut W, cmd: &[&'static str], n: i64) -> IoResult<()> {
+    fn write_num<W: Write>(&self, output: &mut W, cmd: &[&'static str], n: i64) -> io::Result<()> {
         let (flag, value) = if n < 0 { (T, n * -1) } else { (S, n) };
         write!(
             output,
@@ -119,18 +119,22 @@ impl DT {
 }
 
 impl Compiler for DT {
-    fn compile<B: Buffer, W: ByteCodeWriter>(&self, input: &mut B, output: &mut W) -> IoResult<()> {
+    fn compile<B: BufRead, W: ByteCodeWriter>(
+        &self,
+        input: &mut B,
+        output: &mut W,
+    ) -> io::Result<()> {
         let mut it = scan(input).tokenize().parse();
         output.assemble(&mut it)
     }
 }
 
 impl Decompiler for DT {
-    fn decompile<R: ByteCodeReader, W: Writer>(
+    fn decompile<R: ByteCodeReader, W: Write>(
         &self,
         input: &mut R,
         output: &mut W,
-    ) -> IoResult<()> {
+    ) -> io::Result<()> {
         for inst in input.disassemble() {
             match inst {
                 Ok(ir::StackPush(n)) => self.write_num(output, [S, S], n),

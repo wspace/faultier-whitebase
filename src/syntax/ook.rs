@@ -1,6 +1,6 @@
 //! Parser for Ook!
 
-use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
+use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError};
 use std::str::from_utf8;
 
 use bytecode::ByteCodeWriter;
@@ -13,14 +13,14 @@ struct Tokens<T> {
     lexemes: T,
 }
 
-impl<I: Iterator<Item = IoResult<String>>> Tokens<I> {
+impl<I: Iterator<Item = io::Result<String>>> Tokens<I> {
     pub fn parse(self) -> Instructions<Tokens<I>> {
         Instructions::new(self)
     }
 }
 
-impl<I: Iterator<Item = IoResult<String>>> Iterator for Tokens<I> {
-    type Item = IoResult<Token>;
+impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
+    type Item = io::Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let op = self.lexemes.next();
@@ -61,14 +61,14 @@ struct Scan<'r, T> {
     is_start: bool,
 }
 
-impl<'r, B: Buffer> Scan<'r, B> {
+impl<'r, B: BufRead> Scan<'r, B> {
     pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
         Tokens { lexemes: self }
     }
 }
 
-impl<'r, B: Buffer> Iterator for Scan<'r, B> {
-    type Item = IoResult<String>;
+impl<'r, B: BufRead> Iterator for Scan<'r, B> {
+    type Item = io::Result<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut buf = [0u8, ..9];
@@ -124,7 +124,7 @@ impl<'r, B: Buffer> Iterator for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
+fn scan<'r, B: BufRead>(buffer: &'r mut B) -> Scan<'r, B> {
     Scan {
         buffer: buffer,
         is_start: true,
@@ -142,7 +142,11 @@ impl Ook {
 }
 
 impl Compiler for Ook {
-    fn compile<B: Buffer, W: ByteCodeWriter>(&self, input: &mut B, output: &mut W) -> IoResult<()> {
+    fn compile<B: BufRead, W: ByteCodeWriter>(
+        &self,
+        input: &mut B,
+        output: &mut W,
+    ) -> io::Result<()> {
         let mut it = scan(input).tokenize().parse();
         output.assemble(&mut it)
     }

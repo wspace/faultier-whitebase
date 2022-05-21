@@ -1,7 +1,7 @@
 //! Parser and Generator for Whitespace.
 
 use std::collections::HashMap;
-use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
+use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError, Write};
 use std::num::from_str_radix;
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -41,7 +41,7 @@ pub struct Instructions<T> {
     count: i64,
 }
 
-impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
+impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
     /// Create an iterator that convert to IR from tokens on each iteration.
     pub fn new(iter: I) -> Instructions<I> {
         Instructions {
@@ -51,7 +51,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_value(&mut self) -> IoResult<String> {
+    fn parse_value(&mut self) -> io::Result<String> {
         let mut value = String::new();
         loop {
             match self.tokens.next() {
@@ -71,7 +71,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         Ok(value)
     }
 
-    fn parse_sign(&mut self) -> IoResult<bool> {
+    fn parse_sign(&mut self) -> io::Result<bool> {
         match self.tokens.next() {
             Some(Ok(Space)) => Ok(true),
             Some(Ok(Tab)) => Ok(false),
@@ -84,7 +84,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_number(&mut self) -> IoResult<i64> {
+    fn parse_number(&mut self) -> io::Result<i64> {
         let positive = self.parse_sign()?;
         let value = self.parse_value()?;
         match from_str_radix::<i64>(value.as_slice(), 2) {
@@ -93,7 +93,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_label(&mut self) -> IoResult<i64> {
+    fn parse_label(&mut self) -> io::Result<i64> {
         let label = self.parse_value()?;
         match self.labels.find_copy(&label) {
             Some(val) => Ok(val),
@@ -106,7 +106,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_stack(&mut self) -> IoResult<Instruction> {
+    fn parse_stack(&mut self) -> io::Result<Instruction> {
         match self.tokens.next() {
             Some(Ok(Space)) => Ok(ir::StackPush(self.parse_number()?)),
             Some(Ok(LF)) => match self.tokens.next() {
@@ -128,7 +128,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_arithmetic(&mut self) -> IoResult<Instruction> {
+    fn parse_arithmetic(&mut self) -> io::Result<Instruction> {
         match self.tokens.next() {
             Some(Ok(Space)) => match self.tokens.next() {
                 Some(Ok(Space)) => Ok(ir::Addition),
@@ -150,7 +150,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_heap(&mut self) -> IoResult<Instruction> {
+    fn parse_heap(&mut self) -> io::Result<Instruction> {
         match self.tokens.next() {
             Some(Ok(Space)) => Ok(ir::HeapStore),
             Some(Ok(Tab)) => Ok(ir::HeapRetrieve),
@@ -160,7 +160,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_flow(&mut self) -> IoResult<Instruction> {
+    fn parse_flow(&mut self) -> io::Result<Instruction> {
         match self.tokens.next() {
             Some(Ok(Space)) => match self.tokens.next() {
                 Some(Ok(Space)) => Ok(ir::Mark(self.parse_label()?)),
@@ -188,7 +188,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         }
     }
 
-    fn parse_io(&mut self) -> IoResult<Instruction> {
+    fn parse_io(&mut self) -> io::Result<Instruction> {
         match self.tokens.next() {
             Some(Ok(Space)) => match self.tokens.next() {
                 Some(Ok(Space)) => Ok(ir::PutCharactor),
@@ -211,8 +211,8 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
     }
 }
 
-impl<I: Iterator<Item = IoResult<Token>>> Iterator for Instructions<I> {
-    type Item = IoResult<Instruction>;
+impl<I: Iterator<Item = io::Result<Token>>> Iterator for Instructions<I> {
+    type Item = io::Result<Instruction>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.tokens.next() {
@@ -244,14 +244,14 @@ struct Tokens<T> {
     lexemes: T,
 }
 
-impl<I: Iterator<Item = IoResult<char>>> Tokens<I> {
+impl<I: Iterator<Item = io::Result<char>>> Tokens<I> {
     pub fn parse(self) -> Instructions<Tokens<I>> {
         Instructions::new(self)
     }
 }
 
-impl<I: Iterator<Item = IoResult<char>>> Iterator for Tokens<I> {
-    type Item = IoResult<Token>;
+impl<I: Iterator<Item = io::Result<char>>> Iterator for Tokens<I> {
+    type Item = io::Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let c = self.lexemes.next();
@@ -273,14 +273,14 @@ struct Scan<'r, T> {
     buffer: &'r mut T,
 }
 
-impl<'r, B: Buffer> Scan<'r, B> {
+impl<'r, B: BufRead> Scan<'r, B> {
     pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
         Tokens { lexemes: self }
     }
 }
 
-impl<'r, B: Buffer> Iterator for Scan<'r, B> {
-    type Item = IoResult<char>;
+impl<'r, B: BufRead> Iterator for Scan<'r, B> {
+    type Item = io::Result<char>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -299,7 +299,7 @@ impl<'r, B: Buffer> Iterator for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
+fn scan<'r, B: BufRead>(buffer: &'r mut B) -> Scan<'r, B> {
     Scan { buffer: buffer }
 }
 
@@ -314,18 +314,22 @@ impl Whitespace {
 }
 
 impl Compiler for Whitespace {
-    fn compile<B: Buffer, W: ByteCodeWriter>(&self, input: &mut B, output: &mut W) -> IoResult<()> {
+    fn compile<B: BufRead, W: ByteCodeWriter>(
+        &self,
+        input: &mut B,
+        output: &mut W,
+    ) -> io::Result<()> {
         let mut it = scan(input).tokenize().parse();
         output.assemble(&mut it)
     }
 }
 
 impl Decompiler for Whitespace {
-    fn decompile<R: ByteCodeReader, W: Writer>(
+    fn decompile<R: ByteCodeReader, W: Write>(
         &self,
         input: &mut R,
         output: &mut W,
-    ) -> IoResult<()> {
+    ) -> io::Result<()> {
         for inst in input.disassemble() {
             match inst {
                 Ok(ir::StackPush(n)) => write_num!(output, "  ", n),

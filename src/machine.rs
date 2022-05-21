@@ -2,8 +2,10 @@
 
 use std::collections::{HashMap, TreeMap};
 use std::convert::{TryFrom, TryInto};
-use std::io::stdio::{stdin, stdout_raw, StdReader, StdWriter};
-use std::io::{standard_error, BufferedReader, EndOfFile, InvalidInput, IoError, SeekSet};
+use std::io::{
+    standard_error, stdin, stdout, BufRead, BufReader, EndOfFile, InvalidInput, IoError, SeekFrom,
+    Stdin, Stdout, Write,
+};
 
 use log::debug;
 
@@ -42,11 +44,11 @@ pub struct Machine<B, W> {
 }
 
 /// Create a new `Machine` with stdin and stdout.
-pub fn with_stdio() -> Machine<BufferedReader<StdReader>, StdWriter> {
-    Machine::new(stdin(), stdout_raw())
+pub fn with_stdio() -> Machine<BufReader<Stdin>, Stdout> {
+    Machine::new(BufReader::new(stdin()), stdout())
 }
 
-impl<B: Buffer, W: Writer> Machine<B, W> {
+impl<B: BufRead, W: Write> Machine<B, W> {
     /// Creates a new `Machine` with input and output.
     pub fn new(stdin: B, stdout: W) -> Machine<B, W> {
         Machine {
@@ -319,7 +321,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         index: &mut HashMap<i64, u64>,
         label: i64,
     ) -> MachineResult<()> {
-        match program.tell() {
+        match program.stream_position() {
             Ok(pos) => {
                 index.insert(label, pos);
                 Ok(())
@@ -335,7 +337,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         caller: &mut Vec<u64>,
         label: &i64,
     ) -> MachineResult<()> {
-        match program.tell() {
+        match program.stream_position() {
             Ok(pos) => {
                 caller.push(pos);
                 self.jump(program, index, label)
@@ -351,21 +353,23 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         label: &i64,
     ) -> MachineResult<()> {
         match index.find_copy(label) {
-            Some(pos) => match program.seek(pos.to_i64().unwrap(), SeekSet) {
+            Some(pos) => match program.seek(SeekFrom::Start(pos)) {
                 Ok(_) => Ok(()),
                 Err(err) => Err(MachineIoError(err)),
             },
             None => loop {
                 match program.read_inst() {
-                    Ok((opcode, operand)) if opcode == bytecode::CMD_MARK => match program.tell() {
-                        Ok(pos) => {
-                            index.insert(operand, pos);
-                            if operand == *label {
-                                return Ok(());
+                    Ok((opcode, operand)) if opcode == bytecode::CMD_MARK => {
+                        match program.stream_position() {
+                            Ok(pos) => {
+                                index.insert(operand, pos);
+                                if operand == *label {
+                                    return Ok(());
+                                }
                             }
+                            Err(err) => return Err(MachineIoError(err)),
                         }
-                        Err(err) => return Err(MachineIoError(err)),
-                    },
+                    }
                     Err(ref e) if e.kind == EndOfFile => return Err(UndefinedLabel),
                     Err(err) => return Err(MachineIoError(err)),
                     _ => continue,
@@ -394,7 +398,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         caller: &mut Vec<u64>,
     ) -> MachineResult<()> {
         match caller.pop() {
-            Some(to_return) => match program.seek(to_return.to_i64().unwrap(), SeekSet) {
+            Some(to_return) => match program.seek(SeekFrom::Start(to_return)) {
                 Ok(_) => Ok(()),
                 Err(err) => Err(MachineIoError(err)),
             },
@@ -454,8 +458,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
-    use std::io::util::{NullReader, NullWriter};
-    use std::io::{BufWriter, MemReader, MemWriter};
+    use std::io::{self, BufWriter, MemReader, MemWriter};
 
     use bytecode::ByteCodeWriter;
 
@@ -470,7 +473,7 @@ mod test {
         bcw.write_slide(1).unwrap();
 
         let mut bcr = MemReader::new(bcw.unwrap());
-        let mut vm = super::Machine::new(NullReader, NullWriter);
+        let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
         vm.step(&mut bcr, &mut index, &mut caller).unwrap();
@@ -498,7 +501,7 @@ mod test {
         bcw.write_mod().unwrap();
 
         let mut bcr = MemReader::new(bcw.unwrap());
-        let mut vm = super::Machine::new(NullReader, NullWriter);
+        let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([2, 19, 2, 5, 1, 1]);
@@ -522,7 +525,7 @@ mod test {
         bcw.write_retrieve().unwrap();
 
         let mut bcr = MemReader::new(bcw.unwrap());
-        let mut vm = super::Machine::new(NullReader, NullWriter);
+        let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([1, 1, 2]);
@@ -549,7 +552,7 @@ mod test {
         bcw.write_return().unwrap();
 
         let mut bcr = MemReader::new(bcw.unwrap());
-        let mut vm = super::Machine::new(NullReader, NullWriter);
+        let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([-1, 0]);
