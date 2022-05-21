@@ -13,13 +13,17 @@ use bytecode::{ByteCodeReader, ByteCodeWriter};
 /// Convert from source code to bytecodes.
 pub trait Compiler {
     /// Convert from source code to bytecodes.
-    fn compile<B: Buffer, W: ByteCodeWriter>(&self, &mut B, &mut W) -> IoResult<()>;
+    fn compile<B: Buffer, W: ByteCodeWriter>(&self, input: &mut B, output: &mut W) -> IoResult<()>;
 }
 
 /// Generate source code from bytecods.
 pub trait Decompiler {
     /// Generate source code from bytecods.
-    fn decompile<R: ByteCodeReader, W: Writer>(&self, &mut R, &mut W) -> IoResult<()>;
+    fn decompile<R: ByteCodeReader, W: Writer>(
+        &self,
+        input: &mut R,
+        output: &mut W,
+    ) -> IoResult<()>;
 }
 
 pub mod assembly;

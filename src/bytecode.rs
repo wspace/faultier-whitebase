@@ -39,7 +39,8 @@ pub const CMD_GETN: u8 = IMP_IO + 0b1010;
 /// Bytecodes writer.
 pub trait ByteCodeWriter {
     /// Compile a instruction to bytecodes.
-    fn assemble<I: Iterator<Item = IoResult<Instruction>>>(&mut self, &mut I) -> IoResult<()>;
+    fn assemble<I: Iterator<Item = IoResult<Instruction>>>(&mut self, iter: &mut I)
+        -> IoResult<()>;
     /// Writes a push instruction.
     fn write_push(&mut self, n: i64) -> IoResult<()>;
     /// Writes a duplicate instruction.
