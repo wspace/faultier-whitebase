@@ -154,7 +154,7 @@ impl Compiler for Ook {
 
 #[cfg(test)]
 mod test {
-    use std::io::BufReader;
+    use std::io::Cursor;
 
     use syntax::brainfuck::{
         Decrement, Get, Increment, LoopEnd, LoopStart, MoveLeft, MoveRight, Put,
@@ -162,7 +162,7 @@ mod test {
 
     #[test]
     fn test_scan() {
-        let mut buffer = BufReader::new("Ook? Ook. Ook! Ook.\nOok. Ook? Ook.".as_bytes());
+        let mut buffer = Cursor::new("Ook? Ook. Ook! Ook.\nOok. Ook? Ook.".as_bytes());
         let mut it = super::scan(&mut buffer);
         assert_eq!(it.next(), Some(Ok("Ook? Ook.".to_string())));
         assert_eq!(it.next(), Some(Ok("Ook! Ook.".to_string())));
@@ -183,7 +183,7 @@ mod test {
             "Ook? Ook!",
         ]
         .connect(" ");
-        let mut buffer = BufReader::new(source.as_slice().as_bytes());
+        let mut buffer = Cursor::new(source.as_bytes());
         let mut it = super::scan(&mut buffer).tokenize();
         assert_eq!(it.next(), Some(Ok(MoveRight)));
         assert_eq!(it.next(), Some(Ok(MoveLeft)));

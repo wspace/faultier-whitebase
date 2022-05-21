@@ -322,69 +322,69 @@ impl<R: Read + Seek> ByteCodeReader for R {
 
 #[cfg(test)]
 mod test {
-    use std::io::{self, MemReader, MemWriter};
+    use std::io::{self, Cursor, Seek, SeekFrom};
 
     use super::{ByteCodeReader, ByteCodeWriter};
     use ir;
 
     #[test]
     fn test_readwrite() {
-        let mut writer = MemWriter::new();
-        writer.write_push(-1).unwrap();
-        writer.write_dup().unwrap();
-        writer.write_copy(1).unwrap();
-        writer.write_swap().unwrap();
-        writer.write_discard().unwrap();
-        writer.write_slide(2).unwrap();
-        writer.write_add().unwrap();
-        writer.write_sub().unwrap();
-        writer.write_mul().unwrap();
-        writer.write_div().unwrap();
-        writer.write_mod().unwrap();
-        writer.write_store().unwrap();
-        writer.write_retrieve().unwrap();
-        writer.write_mark(-1).unwrap();
-        writer.write_call(1).unwrap();
-        writer.write_jump(-1).unwrap();
-        writer.write_jumpz(1).unwrap();
-        writer.write_jumpn(-1).unwrap();
-        writer.write_return().unwrap();
-        writer.write_exit().unwrap();
-        writer.write_putc().unwrap();
-        writer.write_putn().unwrap();
-        writer.write_getc().unwrap();
-        writer.write_getn().unwrap();
+        let mut bc = Cursor::new(Vec::new());
+        bc.write_push(-1).unwrap();
+        bc.write_dup().unwrap();
+        bc.write_copy(1).unwrap();
+        bc.write_swap().unwrap();
+        bc.write_discard().unwrap();
+        bc.write_slide(2).unwrap();
+        bc.write_add().unwrap();
+        bc.write_sub().unwrap();
+        bc.write_mul().unwrap();
+        bc.write_div().unwrap();
+        bc.write_mod().unwrap();
+        bc.write_store().unwrap();
+        bc.write_retrieve().unwrap();
+        bc.write_mark(-1).unwrap();
+        bc.write_call(1).unwrap();
+        bc.write_jump(-1).unwrap();
+        bc.write_jumpz(1).unwrap();
+        bc.write_jumpn(-1).unwrap();
+        bc.write_return().unwrap();
+        bc.write_exit().unwrap();
+        bc.write_putc().unwrap();
+        bc.write_putn().unwrap();
+        bc.write_getc().unwrap();
+        bc.write_getn().unwrap();
 
-        let mut reader = MemReader::new(writer.unwrap());
-        assert_eq!(reader.read_inst(), Ok((super::CMD_PUSH, -1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_DUP, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_COPY, 1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_SWAP, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_DISCARD, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_SLIDE, 2)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_ADD, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_SUB, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_MUL, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_DIV, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_MOD, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_STORE, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_RETRIEVE, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_MARK, -1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_CALL, 1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_JUMP, -1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_JUMPZ, 1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_JUMPN, -1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_RETURN, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_EXIT, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_PUTC, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_PUTN, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_GETC, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_GETN, 0)));
+        bc.seek(SeekFrom::Start(0)).unwrap();
+        assert_eq!(bc.read_inst(), Ok((super::CMD_PUSH, -1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_DUP, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_COPY, 1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_SWAP, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_DISCARD, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_SLIDE, 2)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_ADD, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_SUB, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_MUL, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_DIV, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_MOD, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_STORE, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_RETRIEVE, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_MARK, -1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_CALL, 1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMP, -1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPZ, 1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPN, -1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_RETURN, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_EXIT, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTC, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTN, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_GETC, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_GETN, 0)));
     }
 
     #[test]
     fn test_assemble() {
-        let mut writer = MemWriter::new();
+        let mut bc = Cursor::new(Vec::new());
         {
             let vec: Vec<io::Result<ir::Instruction>> = vec![
                 Ok(ir::StackPush(1)),
@@ -413,65 +413,65 @@ mod test {
                 Ok(ir::GetNumber),
             ];
             let mut it = vec.move_iter();
-            writer.assemble(&mut it).unwrap();
+            bc.assemble(&mut it).unwrap();
         }
-        let mut reader = MemReader::new(writer.unwrap());
-        assert_eq!(reader.read_inst(), Ok((super::CMD_PUSH, 1)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_DUP, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_COPY, 2)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_SWAP, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_DISCARD, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_SLIDE, 3)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_ADD, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_SUB, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_MUL, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_DIV, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_MOD, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_STORE, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_RETRIEVE, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_MARK, 4)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_CALL, 5)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_JUMP, 6)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_JUMPZ, 7)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_JUMPN, 8)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_RETURN, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_EXIT, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_PUTC, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_PUTN, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_GETC, 0)));
-        assert_eq!(reader.read_inst(), Ok((super::CMD_GETN, 0)));
+        bc.seek(SeekFrom::Start(0)).unwrap();
+        assert_eq!(bc.read_inst(), Ok((super::CMD_PUSH, 1)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_DUP, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_COPY, 2)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_SWAP, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_DISCARD, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_SLIDE, 3)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_ADD, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_SUB, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_MUL, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_DIV, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_MOD, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_STORE, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_RETRIEVE, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_MARK, 4)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_CALL, 5)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMP, 6)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPZ, 7)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPN, 8)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_RETURN, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_EXIT, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTC, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTN, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_GETC, 0)));
+        assert_eq!(bc.read_inst(), Ok((super::CMD_GETN, 0)));
     }
 
     #[test]
     fn test_disassemble() {
-        let mut writer = MemWriter::new();
-        writer.write_push(-1).unwrap();
-        writer.write_dup().unwrap();
-        writer.write_copy(1).unwrap();
-        writer.write_swap().unwrap();
-        writer.write_discard().unwrap();
-        writer.write_slide(2).unwrap();
-        writer.write_add().unwrap();
-        writer.write_sub().unwrap();
-        writer.write_mul().unwrap();
-        writer.write_div().unwrap();
-        writer.write_mod().unwrap();
-        writer.write_store().unwrap();
-        writer.write_retrieve().unwrap();
-        writer.write_mark(-1).unwrap();
-        writer.write_call(1).unwrap();
-        writer.write_jump(-1).unwrap();
-        writer.write_jumpz(1).unwrap();
-        writer.write_jumpn(-1).unwrap();
-        writer.write_return().unwrap();
-        writer.write_exit().unwrap();
-        writer.write_putc().unwrap();
-        writer.write_putn().unwrap();
-        writer.write_getc().unwrap();
-        writer.write_getn().unwrap();
+        let mut bc = Cursor::new(Vec::new());
+        bc.write_push(-1).unwrap();
+        bc.write_dup().unwrap();
+        bc.write_copy(1).unwrap();
+        bc.write_swap().unwrap();
+        bc.write_discard().unwrap();
+        bc.write_slide(2).unwrap();
+        bc.write_add().unwrap();
+        bc.write_sub().unwrap();
+        bc.write_mul().unwrap();
+        bc.write_div().unwrap();
+        bc.write_mod().unwrap();
+        bc.write_store().unwrap();
+        bc.write_retrieve().unwrap();
+        bc.write_mark(-1).unwrap();
+        bc.write_call(1).unwrap();
+        bc.write_jump(-1).unwrap();
+        bc.write_jumpz(1).unwrap();
+        bc.write_jumpn(-1).unwrap();
+        bc.write_return().unwrap();
+        bc.write_exit().unwrap();
+        bc.write_putc().unwrap();
+        bc.write_putn().unwrap();
+        bc.write_getc().unwrap();
+        bc.write_getn().unwrap();
 
-        let mut reader = MemReader::new(writer.unwrap());
-        let mut it = reader.disassemble();
+        bc.seek(SeekFrom::Start(0)).unwrap();
+        let mut it = bc.disassemble();
         assert_eq!(it.next().unwrap(), Ok(ir::StackPush(-1)));
         assert_eq!(it.next().unwrap(), Ok(ir::StackDuplicate));
         assert_eq!(it.next().unwrap(), Ok(ir::StackCopy(1)));

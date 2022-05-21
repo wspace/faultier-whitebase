@@ -255,13 +255,13 @@ impl Compiler for Brainfuck {
 
 #[cfg(test)]
 mod test {
-    use std::io::BufReader;
+    use std::io::Cursor;
 
     use ir::*;
 
     #[test]
     fn test_scan() {
-        let mut buffer = BufReader::new("><+- ,.\n[饂飩]".as_bytes());
+        let mut buffer = Cursor::new("><+- ,.\n[饂飩]".as_bytes());
         let mut it = super::scan(&mut buffer);
         assert_eq!(it.next(), Some(Ok('>')));
         assert_eq!(it.next(), Some(Ok('<')));
@@ -276,7 +276,7 @@ mod test {
 
     #[test]
     fn test_tokenize() {
-        let mut buffer = BufReader::new("><+- ,.\n[饂飩]".as_bytes());
+        let mut buffer = Cursor::new("><+- ,.\n[饂飩]".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize();
         assert_eq!(it.next(), Some(Ok(super::MoveRight)));
         assert_eq!(it.next(), Some(Ok(super::MoveLeft)));
@@ -291,7 +291,7 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let mut buffer = BufReader::new(">".as_bytes());
+        let mut buffer = Cursor::new(">".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
         assert_eq!(it.next(), Some(Ok(StackDuplicate)));
@@ -303,7 +303,7 @@ mod test {
         assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
         assert!(it.next().is_none());
 
-        let mut buffer = BufReader::new("<".as_bytes());
+        let mut buffer = Cursor::new("<".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
         assert_eq!(it.next(), Some(Ok(StackDuplicate)));
@@ -317,7 +317,7 @@ mod test {
         assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
         assert!(it.next().is_none());
 
-        let mut buffer = BufReader::new("+".as_bytes());
+        let mut buffer = Cursor::new("+".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
         assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
@@ -330,7 +330,7 @@ mod test {
         assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
         assert!(it.next().is_none());
 
-        let mut buffer = BufReader::new("-".as_bytes());
+        let mut buffer = Cursor::new("-".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
         assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
@@ -343,7 +343,7 @@ mod test {
         assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
         assert!(it.next().is_none());
 
-        let mut buffer = BufReader::new(",".as_bytes());
+        let mut buffer = Cursor::new(",".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
         assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
@@ -353,7 +353,7 @@ mod test {
         assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
         assert!(it.next().is_none());
 
-        let mut buffer = BufReader::new(".".as_bytes());
+        let mut buffer = Cursor::new(".".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
         assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
@@ -363,7 +363,7 @@ mod test {
         assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
         assert!(it.next().is_none());
 
-        let mut buffer = BufReader::new("[[]]".as_bytes());
+        let mut buffer = Cursor::new("[[]]".as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         // outer loop
         assert_eq!(it.next(), Some(Ok(Mark(1))));

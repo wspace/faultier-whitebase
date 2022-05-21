@@ -458,116 +458,116 @@ impl<B: BufRead, W: Write> Machine<B, W> {
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
-    use std::io::{self, BufWriter, MemReader, MemWriter};
+    use std::io::{self, Cursor, Seek, SeekFrom};
 
     use bytecode::ByteCodeWriter;
 
     #[test]
     fn test_stack() {
-        let mut bcw = MemWriter::new();
-        bcw.write_push(1).unwrap();
-        bcw.write_dup().unwrap();
-        bcw.write_copy(1).unwrap();
-        bcw.write_swap().unwrap();
-        bcw.write_discard().unwrap();
-        bcw.write_slide(1).unwrap();
+        let mut bc = Cursor::new(Vec::new());
+        bc.write_push(1).unwrap();
+        bc.write_dup().unwrap();
+        bc.write_copy(1).unwrap();
+        bc.write_swap().unwrap();
+        bc.write_discard().unwrap();
+        bc.write_slide(1).unwrap();
 
-        let mut bcr = MemReader::new(bcw.unwrap());
+        bc.seek(SeekFrom::Start(0)).unwrap();
         let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1, 1));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1, 1, 1));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1, 1, 1));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1, 1));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1));
-        assert!(vm.step(&mut bcr, &mut index, &mut caller).is_err());
+        assert!(vm.step(&mut bc, &mut index, &mut caller).is_err());
     }
 
     #[test]
     fn test_arithmetic() {
-        let mut bcw = MemWriter::new();
-        bcw.write_add().unwrap();
-        bcw.write_sub().unwrap();
-        bcw.write_mul().unwrap();
-        bcw.write_div().unwrap();
-        bcw.write_mod().unwrap();
+        let mut bc = Cursor::new(Vec::new());
+        bc.write_add().unwrap();
+        bc.write_sub().unwrap();
+        bc.write_mul().unwrap();
+        bc.write_div().unwrap();
+        bc.write_mod().unwrap();
 
-        let mut bcr = MemReader::new(bcw.unwrap());
+        bc.seek(SeekFrom::Start(0)).unwrap();
         let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([2, 19, 2, 5, 1, 1]);
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2, 19, 2, 5, 2));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2, 19, 2, 3));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2, 19, 6));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2, 3));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2));
-        assert!(vm.step(&mut bcr, &mut index, &mut caller).is_err());
+        assert!(vm.step(&mut bc, &mut index, &mut caller).is_err());
     }
 
     #[test]
     fn test_heap() {
-        let mut bcw = MemWriter::new();
-        bcw.write_store().unwrap();
-        bcw.write_retrieve().unwrap();
+        let mut bc = Cursor::new(Vec::new());
+        bc.write_store().unwrap();
+        bc.write_retrieve().unwrap();
 
-        let mut bcr = MemReader::new(bcw.unwrap());
+        bc.seek(SeekFrom::Start(0)).unwrap();
         let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([1, 1, 2]);
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1));
         assert_eq!(vm.heap.find(&1), Some(&2));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2));
-        assert!(vm.step(&mut bcr, &mut index, &mut caller).is_err());
+        assert!(vm.step(&mut bc, &mut index, &mut caller).is_err());
     }
 
     #[test]
     fn test_flow() {
-        let mut bcw = MemWriter::new();
-        bcw.write_jump(1).unwrap();
-        bcw.write_mark(3).unwrap();
-        bcw.write_call(4).unwrap();
-        bcw.write_exit().unwrap();
-        bcw.write_mark(2).unwrap();
-        bcw.write_jumpn(3).unwrap();
-        bcw.write_mark(1).unwrap();
-        bcw.write_jumpz(2).unwrap();
-        bcw.write_mark(4).unwrap();
-        bcw.write_return().unwrap();
+        let mut bc = Cursor::new(Vec::new());
+        bc.write_jump(1).unwrap();
+        bc.write_mark(3).unwrap();
+        bc.write_call(4).unwrap();
+        bc.write_exit().unwrap();
+        bc.write_mark(2).unwrap();
+        bc.write_jumpn(3).unwrap();
+        bc.write_mark(1).unwrap();
+        bc.write_jumpz(2).unwrap();
+        bc.write_mark(4).unwrap();
+        bc.write_return().unwrap();
 
-        let mut bcr = MemReader::new(bcw.unwrap());
+        bc.seek(SeekFrom::Start(0)).unwrap();
         let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([-1, 0]);
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(-1, 0));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(-1));
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!());
         assert_eq!(caller.len(), 0);
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(caller.len(), 1);
-        vm.step(&mut bcr, &mut index, &mut caller).unwrap();
+        vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(caller.len(), 0);
-        assert_eq!(vm.step(&mut bcr, &mut index, &mut caller), Ok(false));
+        assert_eq!(vm.step(&mut bc, &mut index, &mut caller), Ok(false));
     }
 
     #[test]
@@ -575,23 +575,23 @@ mod test {
         let mut heap = [0, 0];
         let mut buf = [0, ..2];
         {
-            let mut bcw = MemWriter::new();
-            bcw.write_getc().unwrap();
-            bcw.write_getn().unwrap();
-            bcw.write_putc().unwrap();
-            bcw.write_putn().unwrap();
-            let mut bcr = MemReader::new(bcw.unwrap());
-            let input = MemReader::new(vec![87, 49, 50, 51, 10]);
-            let output = BufWriter::new(buf);
+            let mut bc = Cursor::new(Vec::new());
+            bc.write_getc().unwrap();
+            bc.write_getn().unwrap();
+            bc.write_putc().unwrap();
+            bc.write_putn().unwrap();
+            bc.seek(SeekFrom::Start(0)).unwrap();
+            let input = Cursor::new(vec![87, 49, 50, 51, 10]);
+            let output = Cursor::new(&mut buf[..]);
             let mut vm = super::Machine::new(input, output);
             let mut caller = vec![];
             let mut index = HashMap::new();
             vm.stack.push_all([5, 66, 2, 1]);
-            vm.step(&mut bcr, &mut index, &mut caller).unwrap();
-            vm.step(&mut bcr, &mut index, &mut caller).unwrap();
-            vm.step(&mut bcr, &mut index, &mut caller).unwrap();
-            vm.step(&mut bcr, &mut index, &mut caller).unwrap();
-            assert!(vm.step(&mut bcr, &mut index, &mut caller).is_err());
+            vm.step(&mut bc, &mut index, &mut caller).unwrap();
+            vm.step(&mut bc, &mut index, &mut caller).unwrap();
+            vm.step(&mut bc, &mut index, &mut caller).unwrap();
+            vm.step(&mut bc, &mut index, &mut caller).unwrap();
+            assert!(vm.step(&mut bc, &mut index, &mut caller).is_err());
 
             heap[0] = *vm.heap.find(&1).unwrap();
             heap[1] = *vm.heap.find(&2).unwrap();

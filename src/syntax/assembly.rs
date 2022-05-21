@@ -136,7 +136,7 @@ impl Decompiler for Assembly {
 
 #[cfg(test)]
 mod test {
-    use std::io::{BufReader, MemReader, MemWriter};
+    use std::io::{Cursor, Seek, SeekFrom};
     use std::str::from_utf8;
 
     use bytecode;
@@ -151,74 +151,74 @@ mod test {
             "RETURN", "EXIT", "PUTC", "PUTN", "GETC", "GETN",
         ]
         .connect("\n");
-        let mut writer = MemWriter::new();
+        let mut bc = Cursor::new(Vec::new());
         {
             let syntax = super::Assembly::new();
-            let mut buffer = BufReader::new(source.as_slice().as_bytes());
-            syntax.compile(&mut buffer, &mut writer).unwrap();
+            let mut buffer = Cursor::new(source.as_bytes());
+            syntax.compile(&mut buffer, &mut bc).unwrap();
         }
-        let mut reader = MemReader::new(writer.unwrap());
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_PUSH, 1)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_DUP, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_COPY, 2)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_SWAP, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_DISCARD, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_SLIDE, 3)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_ADD, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_SUB, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_MUL, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_DIV, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_MOD, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_STORE, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_RETRIEVE, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_MARK, 4)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_CALL, 5)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_JUMP, 6)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_JUMPZ, 7)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_JUMPN, 8)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_RETURN, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_EXIT, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_PUTC, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_PUTN, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_GETC, 0)));
-        assert_eq!(reader.read_inst(), Ok((bytecode::CMD_GETN, 0)));
-        assert!(reader.read_inst().is_err());
+        bc.seek(SeekFrom::Start(0)).unwrap();
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_PUSH, 1)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_DUP, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_COPY, 2)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_SWAP, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_DISCARD, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_SLIDE, 3)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_ADD, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_SUB, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_MUL, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_DIV, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_MOD, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_STORE, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_RETRIEVE, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_MARK, 4)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_CALL, 5)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_JUMP, 6)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_JUMPZ, 7)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_JUMPN, 8)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_RETURN, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_EXIT, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_PUTC, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_PUTN, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_GETC, 0)));
+        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_GETN, 0)));
+        assert!(bc.read_inst().is_err());
     }
 
     #[test]
     fn test_disassemble() {
-        let mut writer = MemWriter::new();
+        let mut bc2 = Cursor::new(Vec::new());
         {
-            let mut bcw = MemWriter::new();
-            bcw.write_push(1).unwrap();
-            bcw.write_dup().unwrap();
-            bcw.write_copy(2).unwrap();
-            bcw.write_swap().unwrap();
-            bcw.write_discard().unwrap();
-            bcw.write_slide(3).unwrap();
-            bcw.write_add().unwrap();
-            bcw.write_sub().unwrap();
-            bcw.write_mul().unwrap();
-            bcw.write_div().unwrap();
-            bcw.write_mod().unwrap();
-            bcw.write_store().unwrap();
-            bcw.write_retrieve().unwrap();
-            bcw.write_mark(1).unwrap();
-            bcw.write_call(15).unwrap();
-            bcw.write_jump(2).unwrap();
-            bcw.write_jumpz(16).unwrap();
-            bcw.write_jumpn(32).unwrap();
-            bcw.write_return().unwrap();
-            bcw.write_exit().unwrap();
-            bcw.write_putc().unwrap();
-            bcw.write_putn().unwrap();
-            bcw.write_getc().unwrap();
-            bcw.write_getn().unwrap();
-            let mut bcr = MemReader::new(bcw.unwrap());
+            let mut bc = Cursor::new(Vec::new());
+            bc.write_push(1).unwrap();
+            bc.write_dup().unwrap();
+            bc.write_copy(2).unwrap();
+            bc.write_swap().unwrap();
+            bc.write_discard().unwrap();
+            bc.write_slide(3).unwrap();
+            bc.write_add().unwrap();
+            bc.write_sub().unwrap();
+            bc.write_mul().unwrap();
+            bc.write_div().unwrap();
+            bc.write_mod().unwrap();
+            bc.write_store().unwrap();
+            bc.write_retrieve().unwrap();
+            bc.write_mark(1).unwrap();
+            bc.write_call(15).unwrap();
+            bc.write_jump(2).unwrap();
+            bc.write_jumpz(16).unwrap();
+            bc.write_jumpn(32).unwrap();
+            bc.write_return().unwrap();
+            bc.write_exit().unwrap();
+            bc.write_putc().unwrap();
+            bc.write_putn().unwrap();
+            bc.write_getc().unwrap();
+            bc.write_getn().unwrap();
+            bc.seek(SeekFrom::Start(0)).unwrap();
             let syntax = super::Assembly::new();
-            syntax.decompile(&mut bcr, &mut writer).unwrap();
+            syntax.decompile(&mut bc, &mut bc2).unwrap();
         }
-        let result = from_utf8(writer.get_ref()).unwrap();
+        let result = from_utf8(bc2.get_ref()).unwrap();
         let expected = vec![
             "PUSH 1", "DUP", "COPY 2", "SWAP", "DISCARD", "SLIDE 3", "ADD", "SUB", "MUL", "DIV",
             "MOD", "STORE", "RETRIEVE", "MARK 1", "CALL 15", "JUMP 2", "JUMPZ 16", "JUMPN 32",
