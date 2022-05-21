@@ -42,7 +42,7 @@ pub struct Instructions<T> {
     count: Counter<i64>,
 }
 
-impl<I: Iterator<IoResult<Token>>> Instructions<I> {
+impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
     /// Create an iterator that convert to IR from tokens on each iteration.
     pub fn new(iter: I) -> Instructions<I> {
         Instructions {
@@ -211,8 +211,10 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
     }
 }
 
-impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructions<I> {
-    fn next(&mut self) -> Option<IoResult<Instruction>> {
+impl<I: Iterator<Item = IoResult<Token>>> Iterator for Instructions<I> {
+    type Item = IoResult<Instruction>;
+
+    fn next(&mut self) -> Option<Self::Item> {
         match self.tokens.next() {
             Some(Ok(Space)) => Some(self.parse_stack()),
             Some(Ok(Tab)) => match self.tokens.next() {
@@ -242,14 +244,16 @@ struct Tokens<T> {
     lexemes: T,
 }
 
-impl<I: Iterator<IoResult<char>>> Tokens<I> {
+impl<I: Iterator<Item = IoResult<char>>> Tokens<I> {
     pub fn parse(self) -> Instructions<Tokens<I>> {
         Instructions::new(self)
     }
 }
 
-impl<I: Iterator<IoResult<char>>> Iterator<IoResult<Token>> for Tokens<I> {
-    fn next(&mut self) -> Option<IoResult<Token>> {
+impl<I: Iterator<Item = IoResult<char>>> Iterator for Tokens<I> {
+    type Item = IoResult<Token>;
+
+    fn next(&mut self) -> Option<Self::Item> {
         let c = self.lexemes.next();
         if c.is_none() {
             return None;
@@ -275,8 +279,10 @@ impl<'r, B: Buffer> Scan<'r, B> {
     }
 }
 
-impl<'r, B: Buffer> Iterator<IoResult<char>> for Scan<'r, B> {
-    fn next(&mut self) -> Option<IoResult<char>> {
+impl<'r, B: Buffer> Iterator for Scan<'r, B> {
+    type Item = IoResult<char>;
+
+    fn next(&mut self) -> Option<Self::Item> {
         loop {
             let ret = match self.buffer.read_char() {
                 Ok(' ') => ' ',

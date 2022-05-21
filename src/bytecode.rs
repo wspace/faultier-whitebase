@@ -39,7 +39,7 @@ pub const CMD_GETN: u8 = IMP_IO + 0b1010;
 /// Bytecodes writer.
 pub trait ByteCodeWriter {
     /// Compile a instruction to bytecodes.
-    fn assemble<I: Iterator<IoResult<Instruction>>>(&mut self, &mut I) -> IoResult<()>;
+    fn assemble<I: Iterator<Item = IoResult<Instruction>>>(&mut self, &mut I) -> IoResult<()>;
     /// Writes a push instruction.
     fn write_push(&mut self, n: i64) -> IoResult<()>;
     /// Writes a duplicate instruction.
@@ -91,7 +91,10 @@ pub trait ByteCodeWriter {
 }
 
 impl<W: Writer> ByteCodeWriter for W {
-    fn assemble<I: Iterator<IoResult<Instruction>>>(&mut self, iter: &mut I) -> IoResult<()> {
+    fn assemble<I: Iterator<Item = IoResult<Instruction>>>(
+        &mut self,
+        iter: &mut I,
+    ) -> IoResult<()> {
         for inst in *iter {
             match inst {
                 Ok(ir::StackPush(n)) => self.write_push(n),
@@ -234,8 +237,10 @@ pub struct Instructions<'r, T> {
     reader: &'r mut T,
 }
 
-impl<'r, B: ByteCodeReader> Iterator<IoResult<Instruction>> for Instructions<'r, B> {
-    fn next(&mut self) -> Option<IoResult<Instruction>> {
+impl<'r, B: ByteCodeReader> Iterator for Instructions<'r, B> {
+    type Item = IoResult<Instruction>;
+
+    fn next(&mut self) -> Option<Self::Item> {
         match self.reader.read_inst() {
             Ok((CMD_PUSH, n)) => Some(Ok(ir::StackPush(n))),
             Ok((CMD_DUP, _)) => Some(Ok(ir::StackDuplicate)),

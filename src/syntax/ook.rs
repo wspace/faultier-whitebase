@@ -13,14 +13,16 @@ struct Tokens<T> {
     lexemes: T,
 }
 
-impl<I: Iterator<IoResult<String>>> Tokens<I> {
+impl<I: Iterator<Item = IoResult<String>>> Tokens<I> {
     pub fn parse(self) -> Instructions<Tokens<I>> {
         Instructions::new(self)
     }
 }
 
-impl<I: Iterator<IoResult<String>>> Iterator<IoResult<Token>> for Tokens<I> {
-    fn next(&mut self) -> Option<IoResult<Token>> {
+impl<I: Iterator<Item = IoResult<String>>> Iterator for Tokens<I> {
+    type Item = IoResult<Token>;
+
+    fn next(&mut self) -> Option<Self::Item> {
         let op = self.lexemes.next();
         if op.is_none() {
             return None;
@@ -65,8 +67,10 @@ impl<'r, B: Buffer> Scan<'r, B> {
     }
 }
 
-impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
-    fn next(&mut self) -> Option<IoResult<String>> {
+impl<'r, B: Buffer> Iterator for Scan<'r, B> {
+    type Item = IoResult<String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
         let mut buf = [0u8, ..9];
 
         if !self.is_start {
