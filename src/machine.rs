@@ -147,7 +147,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
             Err(IllegalStackManipulation)
         } else {
             let top = self.stack.pop().unwrap();
-            let mut i = 0u;
+            let mut i = 0;
             while i < n {
                 self.stack.pop();
                 i += 1;
@@ -157,7 +157,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         }
     }
 
-    fn calc(&mut self, f: |i64, i64| -> i64) -> MachineResult<()> {
+    fn calc(&mut self, f: impl FnOnce(i64, i64) -> i64) -> MachineResult<()> {
         match self.stack.pop() {
             Some(x) => match self.stack.pop() {
                 Some(y) => {
@@ -170,7 +170,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         }
     }
 
-    fn dcalc(&mut self, divf: |i64, i64| -> i64) -> MachineResult<()> {
+    fn dcalc(&mut self, divf: impl FnOnce(i64, i64) -> i64) -> MachineResult<()> {
         match self.stack.pop() {
             Some(x) if x == 0 => Err(ZeroDivision),
             Some(x) => match self.stack.pop() {
@@ -257,7 +257,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         }
     }
 
-    fn jump_if(&mut self, program: &mut ByteCodeReader, index: &mut HashMap<i64, u64>, label: &i64, test: |i64| -> bool) -> MachineResult<()> {
+    fn jump_if(&mut self, program: &mut ByteCodeReader, index: &mut HashMap<i64, u64>, label: &i64, test: impl FnOnce(i64) -> bool) -> MachineResult<()> {
         match self.stack.pop() {
             Some(x) if test(x) => self.jump(program, index, label),
             None => Err(IllegalStackManipulation),

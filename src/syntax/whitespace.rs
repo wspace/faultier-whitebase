@@ -22,7 +22,7 @@ macro_rules! write_num (
                }).replace("0"," ").replace("1","\t")
         )
     )
-)
+);
 
 fn unknown_instruction(inst: &'static str) -> IoError {
     IoError {

@@ -4,6 +4,6 @@ name = "whitebase"
 version = "0.1.0-pre"
 authors = ["faultier"]
 
-[[lib]]
+[lib]
 
 name = "whitebase"

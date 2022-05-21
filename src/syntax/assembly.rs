@@ -17,7 +17,7 @@ macro_rules! try_number(
             detail: Some(format!("expected number, but {}", $val)),
         }),
     })
-)
+);
 
 /// Assembler and Disassembler.
 pub struct Assembly;
