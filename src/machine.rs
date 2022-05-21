@@ -4,6 +4,8 @@ use std::collections::{HashMap, TreeMap};
 use std::io::stdio::{stdin, stdout_raw, StdReader, StdWriter};
 use std::io::{standard_error, BufferedReader, EndOfFile, InvalidInput, IoError, SeekSet};
 
+use log::debug;
+
 use bytecode;
 use bytecode::ByteCodeReader;
 

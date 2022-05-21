@@ -5,3 +5,6 @@ authors = ["faultier"]
 
 [lib]
 name = "whitebase"
+
+[dependencies]
+log = "0.4"
