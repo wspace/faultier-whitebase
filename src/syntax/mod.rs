@@ -1,7 +1,5 @@
 //! Compilers and Decompilers.
 
-#![experimental]
-
 pub use self::assembly::Assembly;
 pub use self::brainfuck::Brainfuck;
 pub use self::dt::DT;

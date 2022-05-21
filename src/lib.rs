@@ -33,11 +33,8 @@ fn main() {
 
 #![crate_name = "whitebase"]
 #![crate_type = "rlib"]
-#![warn(missing_doc)]
-#![feature(phase, globs, macro_rules)]
-#![experimental]
+#![warn(missing_docs)]
 
-#[phase(plugin, link)]
 extern crate log;
 
 pub static VERSION_MAJOR: uint = 0;

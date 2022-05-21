@@ -1,7 +1,5 @@
 //! Parser for Ook!
 
-#![experimental]
-
 use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 use std::str::from_utf8;
 

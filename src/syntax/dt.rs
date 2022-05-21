@@ -1,7 +1,5 @@
 //! Parser and Generator for DT.
 
-#![experimental]
-
 use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};

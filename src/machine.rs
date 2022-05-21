@@ -1,7 +1,5 @@
 //! A virtual machine that execute Whitebase bytecode.
 
-#![experimental]
-
 use std::collections::{HashMap, TreeMap};
 use std::io::stdio::{stdin, stdout_raw, StdReader, StdWriter};
 use std::io::{standard_error, BufferedReader, EndOfFile, InvalidInput, IoError, SeekSet};
@@ -12,7 +10,7 @@ use bytecode::ByteCodeReader;
 pub type MachineResult<T> = Result<T, MachineError>;
 
 /// A list specifying VM error.
-#[deriving(PartialEq, Show)]
+#[derive(PartialEq, Show)]
 pub enum MachineError {
     /// Empty stack poped.
     IllegalStackManipulation,

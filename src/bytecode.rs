@@ -1,7 +1,5 @@
 //! Bytecode utilities.
 
-#![unstable]
-
 use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 
 use ir;
@@ -38,7 +36,6 @@ pub static CMD_PUTN: u8 = IMP_IO + 0b0010;
 pub static CMD_GETC: u8 = IMP_IO + 0b1000;
 pub static CMD_GETN: u8 = IMP_IO + 0b1010;
 
-#[experimental]
 /// Bytecodes writer.
 pub trait ByteCodeWriter {
     /// Compile a instruction to bytecodes.
@@ -232,7 +229,6 @@ impl<W: Writer> ByteCodeWriter for W {
     }
 }
 
-#[experimental]
 /// An iterator that convert to IR from bytes on each iteration, `read_inst()` encounters `EndOfFile`.
 pub struct Instructions<'r, T> {
     reader: &'r mut T,
@@ -274,7 +270,6 @@ impl<'r, B: ByteCodeReader> Iterator<IoResult<Instruction>> for Instructions<'r,
     }
 }
 
-#[experimental]
 /// Bytecodes reader.
 pub trait ByteCodeReader: Reader + Seek {
     /// Read the next instruction bytes from the underlying stream.

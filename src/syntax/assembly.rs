@@ -1,7 +1,5 @@
 //! Assembler and Disassembler.
 
-#![experimental]
-
 use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 
 use bytecode;

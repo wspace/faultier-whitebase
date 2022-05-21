@@ -1,7 +1,5 @@
 //! Parser and Generator for Whitespace.
 
-#![experimental]
-
 use std::collections::HashMap;
 use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 use std::iter::{count, Counter};
@@ -230,8 +228,8 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
     }
 }
 
-#[allow(missing_doc)]
-#[deriving(PartialEq, Show)]
+#[allow(missing_docs)]
+#[derive(PartialEq, Show)]
 pub enum Token {
     Space,
     Tab,
