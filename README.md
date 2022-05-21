@@ -29,12 +29,12 @@ fn main() {
     let mut writer = MemWriter::new();
     let ws = Whitespace::new();
     match ws.compile(&mut buffer, &mut writer) {
-        Err(e) => fail!("{}", e),
+        Err(e) => panic!("{}", e),
         _ => {
             let mut reader = MemReader::new(writer.unwrap());
             let mut machine = machine::with_stdio();
             match machine.run(&mut reader) {
-                Err(e) => fail!("{}", e),
+                Err(e) => panic!("{:?}", e),
                 _ => (),
             }
         }

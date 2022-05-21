@@ -17,9 +17,9 @@ macro_rules! write_num (
             "{}{}",
             $cmd,
             if $n < 0 {
-                format!("\t{:t}\n", $n * -1)
+                format!("\t{:b}\n", $n * -1)
             } else {
-                format!(" {:t}\n", $n)
+                format!(" {:b}\n", $n)
             }
             .replace("0", " ")
             .replace("1", "\t")
@@ -229,7 +229,7 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
 }
 
 #[allow(missing_docs)]
-#[derive(PartialEq, Show)]
+#[derive(PartialEq, Debug)]
 pub enum Token {
     Space,
     Tab,

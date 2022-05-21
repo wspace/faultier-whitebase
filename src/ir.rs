@@ -1,7 +1,7 @@
 //! Intermediate representations of instruction set.
 
 #[allow(missing_docs)]
-#[derive(PartialEq, Eq, Clone, Hash, Show)]
+#[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub enum Instruction {
     StackPush(i64),
     StackDuplicate,

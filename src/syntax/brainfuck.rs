@@ -142,7 +142,7 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
 }
 
 #[allow(missing_docs)]
-#[derive(PartialEq, Show)]
+#[derive(PartialEq, Debug)]
 pub enum Token {
     MoveRight,
     MoveLeft,

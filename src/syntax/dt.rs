@@ -108,7 +108,7 @@ impl DT {
             "{}{}{}{}",
             cmd.concat(),
             flag,
-            format!("{:t}", value).replace("0", S).replace("1", T),
+            format!("{:b}", value).replace("0", S).replace("1", T),
             N
         )
     }

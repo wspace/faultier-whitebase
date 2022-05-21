@@ -10,7 +10,7 @@ use bytecode::ByteCodeReader;
 pub type MachineResult<T> = Result<T, MachineError>;
 
 /// A list specifying VM error.
-#[derive(PartialEq, Show)]
+#[derive(PartialEq, Debug)]
 pub enum MachineError {
     /// Empty stack poped.
     IllegalStackManipulation,
@@ -168,7 +168,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
                 Ok(true)
             }
             Ok((bytecode::CMD_EXIT, _)) => {
-                debug!("EXIT ({}, {})", self.stack, self.heap);
+                debug!("EXIT ({:?}, {:?})", self.stack, self.heap);
                 Ok(false)
             }
             Ok((bytecode::CMD_PUTC, _)) => {
