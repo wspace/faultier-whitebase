@@ -1,7 +1,7 @@
 //! Parser for Brainfuck.
 
 use std::collections::HashMap;
-use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError};
+use std::io::{self, BufRead, EndOfFile, ErrorKind};
 
 use bytecode::ByteCodeWriter;
 use ir;
@@ -122,11 +122,10 @@ impl<I: Iterator<Item = io::Result<Token>>> Iterator for Instructions<I> {
                             Ok(ir::Jump(self.marker(format!("{}#", l)))),
                             Ok(ir::Mark(self.marker(format!("#{}", l)))),
                         ],
-                        None => vec![Err(IoError {
-                            kind: InvalidInput,
-                            desc: "syntax error",
-                            detail: Some("broken loop".to_string()),
-                        })],
+                        None => vec![Err(io::Error::new(
+                            ErrorKind::InvalidInput,
+                            "syntax error: broken loop",
+                        ))],
                     },
                     Some(Err(e)) => vec![Err(e)],
                     None => {
@@ -187,7 +186,7 @@ impl<I: Iterator<Item = io::Result<char>>> Iterator for Tokens<I> {
             Ok('.') => Ok(Put),
             Ok('[') => Ok(LoopStart),
             Ok(']') => Ok(LoopEnd),
-            Ok(_) => Err(standard_error(InvalidInput)),
+            Ok(_) => Err(ErrorKind::InvalidInput.into()),
             Err(e) => Err(e),
         })
     }
@@ -218,7 +217,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                 Ok('[') => '[',
                 Ok(']') => ']',
                 Ok(_) => continue,
-                Err(IoError {
+                Err(io::Error {
                     kind: EndOfFile, ..
                 }) => return None,
                 Err(e) => return Some(Err(e)),

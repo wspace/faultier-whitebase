@@ -3,8 +3,7 @@
 use std::collections::{HashMap, TreeMap};
 use std::convert::{TryFrom, TryInto};
 use std::io::{
-    standard_error, stdin, stdout, BufRead, BufReader, EndOfFile, InvalidInput, IoError, SeekFrom,
-    Stdin, Stdout, Write,
+    self, stdin, stdout, BufRead, BufReader, EndOfFile, ErrorKind, SeekFrom, Stdin, Stdout, Write,
 };
 
 use log::debug;
@@ -28,7 +27,7 @@ pub enum MachineError {
     /// Program includes no "EXIT" instruction.
     MissingExitInstruction,
     /// I/O error occurred.
-    MachineIoError(IoError),
+    MachineIoError(io::Error),
     /// Any runtime error not part of this list.
     OtherMachineError,
 }
@@ -448,7 +447,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
                     self.store()?;
                     Ok(())
                 }
-                None => Err(MachineIoError(standard_error(InvalidInput))),
+                None => Err(MachineIoError(ErrorKind::InvalidInput.into())),
             },
             Err(err) => Err(MachineIoError(err)),
         }

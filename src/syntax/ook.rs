@@ -1,6 +1,6 @@
 //! Parser for Ook!
 
-use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError};
+use std::io::{self, BufRead, EndOfFile, ErrorKind};
 use std::str::from_utf8;
 
 use bytecode::ByteCodeWriter;
@@ -43,7 +43,7 @@ impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
             "Ook! Ook." => Ok(Put),
             "Ook! Ook?" => Ok(LoopStart),
             "Ook? Ook!" => Ok(LoopEnd),
-            _ => Err(standard_error(InvalidInput)),
+            _ => Err(ErrorKind::InvalidInput.into()),
         })
     }
 }
@@ -77,8 +77,8 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
             // skip separator
             match self.buffer.read_char() {
                 Ok(ref c) if is_whitespace(c) => (),
-                Ok(_) => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError {
+                Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
+                Err(io::Error {
                     kind: EndOfFile, ..
                 }) => return None,
                 Err(e) => return Some(Err(e)),
@@ -91,7 +91,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                         buf[0] = c as u8;
                         break;
                     }
-                    Err(IoError {
+                    Err(io::Error {
                         kind: EndOfFile, ..
                     }) => return None,
                     Err(e) => return Some(Err(e)),
@@ -99,8 +99,8 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
             }
             match self.buffer.read(buf.mut_slice_from(1)) {
                 Ok(n) if n == 8 => (),
-                Ok(_) => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError {
+                Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
+                Err(io::Error {
                     kind: EndOfFile, ..
                 }) => return None,
                 Err(e) => return Some(Err(e)),
@@ -108,8 +108,8 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
         } else {
             match self.buffer.read(buf) {
                 Ok(n) if n == 9 => (),
-                Ok(_) => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError {
+                Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
+                Err(io::Error {
                     kind: EndOfFile, ..
                 }) => return None,
                 Err(e) => return Some(Err(e)),
@@ -119,7 +119,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
 
         match from_utf8(buf) {
             Some(string) => Some(Ok(String::from_str(string))),
-            None => Some(Err(standard_error(InvalidInput))),
+            None => Some(Err(ErrorKind::InvalidInput.into())),
         }
     }
 }

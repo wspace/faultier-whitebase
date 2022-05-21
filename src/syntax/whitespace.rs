@@ -1,7 +1,7 @@
 //! Parser and Generator for Whitespace.
 
 use std::collections::HashMap;
-use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError, Write};
+use std::io::{self, BufRead, EndOfFile, ErrorKind, Write};
 use std::num::from_str_radix;
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -26,12 +26,11 @@ macro_rules! write_num (
     )
 );
 
-fn unknown_instruction(inst: &'static str) -> IoError {
-    IoError {
-        kind: InvalidInput,
-        desc: "syntax error",
-        detail: Some(format!("\"{}\" is unknown instruction", inst)),
-    }
+fn unknown_instruction(inst: &'static str) -> io::Error {
+    io::Error::new(
+        ErrorKind::InvalidInput,
+        format!("syntax error: \"{}\" is unknown instruction", inst),
+    )
 }
 
 /// An iterator that convert to IR from whitespace tokens on each iteration.
@@ -60,11 +59,10 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
                 Some(Ok(LF)) => break,
                 Some(Err(e)) => return Err(e),
                 None => {
-                    return Err(IoError {
-                        kind: InvalidInput,
-                        desc: "syntax error",
-                        detail: Some("no value terminator".to_string()),
-                    })
+                    return Err(io::Error::new(
+                        ErrorKind::InvalidInput,
+                        "syntax error: no value terminator",
+                    ))
                 }
             }
         }
@@ -75,11 +73,10 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
         match self.tokens.next() {
             Some(Ok(Space)) => Ok(true),
             Some(Ok(Tab)) => Ok(false),
-            Some(Ok(LF)) | None => Err(IoError {
-                kind: InvalidInput,
-                desc: "invalid value format",
-                detail: Some("no sign".to_string()),
-            }),
+            Some(Ok(LF)) | None => Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                "invalid value format: no sign",
+            )),
             Some(Err(e)) => Err(e),
         }
     }
@@ -89,7 +86,7 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
         let value = self.parse_value()?;
         match from_str_radix::<i64>(value.as_slice(), 2) {
             Some(n) => Ok(if positive { n } else { n * -1 }),
-            None => Err(standard_error(InvalidInput)),
+            None => Err(ErrorKind::InvalidInput.into()),
         }
     }
 
@@ -221,7 +218,7 @@ impl<I: Iterator<Item = io::Result<Token>>> Iterator for Instructions<I> {
                 Some(Ok(Space)) => Some(self.parse_arithmetic()),
                 Some(Ok(Tab)) => Some(self.parse_heap()),
                 Some(Ok(LF)) => Some(self.parse_io()),
-                _ => Some(Err(standard_error(InvalidInput))),
+                _ => Some(Err(ErrorKind::InvalidInput.into())),
             },
             Some(Ok(LF)) => Some(self.parse_flow()),
             Some(Err(e)) => Some(Err(e)),
@@ -263,7 +260,7 @@ impl<I: Iterator<Item = io::Result<char>>> Iterator for Tokens<I> {
             Ok(' ') => Ok(Space),
             Ok('\t') => Ok(Tab),
             Ok('\n') => Ok(LF),
-            Ok(_) => Err(standard_error(InvalidInput)),
+            Ok(_) => Err(ErrorKind::InvalidInput.into()),
             Err(e) => Err(e),
         })
     }
@@ -289,7 +286,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                 Ok('\t') => '\t',
                 Ok('\n') => '\n',
                 Ok(_) => continue,
-                Err(IoError {
+                Err(io::Error {
                     kind: EndOfFile, ..
                 }) => return None,
                 Err(e) => return Some(Err(e)),

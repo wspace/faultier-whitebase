@@ -1,6 +1,6 @@
 //! Parser and Generator for DT.
 
-use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError, Write};
+use std::io::{self, BufRead, EndOfFile, ErrorKind, Write};
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
 use ir;
@@ -40,7 +40,7 @@ impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
             S => Ok(Space),
             T => Ok(Tab),
             N => Ok(LF),
-            _ => Err(standard_error(InvalidInput)),
+            _ => Err(ErrorKind::InvalidInput.into()),
         })
     }
 }
@@ -77,7 +77,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                     return Some(Ok(T.to_string()));
                 }
                 Ok(_) => continue,
-                Err(IoError {
+                Err(io::Error {
                     kind: EndOfFile, ..
                 }) => return None,
                 Err(e) => return Some(Err(e)),

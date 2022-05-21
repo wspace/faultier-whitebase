@@ -1,6 +1,6 @@
 //! Assembler and Disassembler.
 
-use std::io::{self, standard_error, BufRead, EndOfFile, InvalidInput, IoError, Write};
+use std::io::{self, BufRead, EndOfFile, ErrorKind, Write};
 
 use bytecode;
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -9,11 +9,10 @@ use syntax::{Compiler, Decompiler};
 macro_rules! try_number(
     ($val:expr) => (match from_str($val) {
         Some(n) => n,
-        None => return Err(IoError {
-            kind: InvalidInput,
-            desc: "invalid value format",
-            detail: Some(format!("expected number, but {}", $val)),
-        }),
+        None => return Err(io::Error::new(
+            ErrorKind::InvalidInput,
+            format!("invalid value format: expected number, but {}", $val),
+        )),
     })
 );
 
@@ -73,7 +72,7 @@ impl Compiler for Assembly {
                         "PUTN" => output.write_putn(),
                         "GETC" => output.write_getc(),
                         "GETN" => output.write_getn(),
-                        _ => Err(standard_error(InvalidInput)),
+                        _ => Err(ErrorKind::InvalidInput.into()),
                     }
                 }
                 Err(e) => Err(e),
@@ -121,7 +120,7 @@ impl Decompiler for Assembly {
                 Ok((bytecode::CMD_PUTN, _)) => output.write_line("PUTN"),
                 Ok((bytecode::CMD_GETC, _)) => output.write_line("GETC"),
                 Ok((bytecode::CMD_GETN, _)) => output.write_line("GETN"),
-                Ok(_) => Err(standard_error(InvalidInput)),
+                Ok(_) => Err(ErrorKind::InvalidInput.into()),
                 Err(e) => Err(e),
             };
             match res {

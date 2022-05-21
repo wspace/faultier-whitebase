@@ -1,6 +1,6 @@
 //! Bytecode utilities.
 
-use std::io::{self, standard_error, EndOfFile, InvalidInput, IoError, Read, Seek, Write};
+use std::io::{self, EndOfFile, ErrorKind, Read, Seek, Write};
 
 use ir;
 use ir::Instruction;
@@ -269,11 +269,11 @@ impl<'r, B: ByteCodeReader> Iterator for Instructions<'r, B> {
             Ok((CMD_PUTN, _)) => Some(Ok(ir::PutNumber)),
             Ok((CMD_GETC, _)) => Some(Ok(ir::GetCharactor)),
             Ok((CMD_GETN, _)) => Some(Ok(ir::GetNumber)),
-            Err(IoError {
+            Err(io::Error {
                 kind: EndOfFile, ..
             }) => None,
             Err(e) => Some(Err(e)),
-            _ => Some(Err(standard_error(InvalidInput))),
+            _ => Some(Err(ErrorKind::InvalidInput.into())),
         }
     }
 }
