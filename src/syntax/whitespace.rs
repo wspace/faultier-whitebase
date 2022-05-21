@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
-use std::iter::{count, Counter};
 use std::num::from_str_radix;
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -39,7 +38,7 @@ fn unknown_instruction(inst: &'static str) -> IoError {
 pub struct Instructions<T> {
     tokens: T,
     labels: HashMap<String, i64>,
-    count: Counter<i64>,
+    count: i64,
 }
 
 impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
@@ -48,7 +47,7 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         Instructions {
             tokens: iter,
             labels: HashMap::new(),
-            count: count(1, 1),
+            count: 1,
         }
     }
 
@@ -99,7 +98,8 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         match self.labels.find_copy(&label) {
             Some(val) => Ok(val),
             None => {
-                let val = self.count.next().unwrap();
+                let val = self.count;
+                self.count += 1;
                 self.labels.insert(label, val);
                 Ok(val)
             }

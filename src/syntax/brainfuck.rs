@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
-use std::iter::{count, Counter};
 
 use bytecode::ByteCodeWriter;
 use ir;
@@ -16,9 +15,9 @@ pub const BF_PTR_ADDR: i64 = -1;
 pub struct Instructions<T> {
     tokens: T,
     stack: Vec<i64>,
-    scount: Counter<i64>,
+    scount: i64,
     labels: HashMap<String, i64>,
-    lcount: Counter<i64>,
+    lcount: i64,
     buffer: Vec<IoResult<Instruction>>,
     parsed: bool,
 }
@@ -29,9 +28,9 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         Instructions {
             tokens: iter,
             stack: Vec::new(),
-            scount: count(1, 1),
+            scount: 1,
             labels: HashMap::new(),
-            lcount: count(1, 1),
+            lcount: 1,
             buffer: Vec::new(),
             parsed: false,
         }
@@ -41,7 +40,8 @@ impl<I: Iterator<Item = IoResult<Token>>> Instructions<I> {
         match self.labels.find_copy(&label) {
             Some(val) => val,
             None => {
-                let val = self.lcount.next().unwrap();
+                let val = self.lcount;
+                self.lcount += 1;
                 self.labels.insert(label, val);
                 val
             }
@@ -106,7 +106,8 @@ impl<I: Iterator<Item = IoResult<Token>>> Iterator for Instructions<I> {
                         Ok(ir::PutCharactor),
                     ],
                     Some(Ok(LoopStart)) => {
-                        let l: i64 = self.scount.next().unwrap();
+                        let l: i64 = self.scount;
+                        self.scount += 1;
                         self.stack.push(l);
                         vec![
                             Ok(ir::Mark(self.marker(format!("{}#", l)))),
