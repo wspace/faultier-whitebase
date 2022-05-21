@@ -88,8 +88,8 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
     }
 
     fn parse_number(&mut self) -> IoResult<i64> {
-        let positive = try!(self.parse_sign());
-        let value = try!(self.parse_value());
+        let positive = self.parse_sign()?;
+        let value = self.parse_value()?;
         match from_str_radix::<i64>(value.as_slice(), 2) {
             Some(n) => Ok(if positive { n } else { n * -1 }),
             None => Err(standard_error(InvalidInput)),
@@ -97,7 +97,7 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
     }
 
     fn parse_label(&mut self) -> IoResult<i64> {
-        let label = try!(self.parse_value());
+        let label = self.parse_value()?;
         match self.labels.find_copy(&label) {
             Some(val) => Ok(val),
             None => {
@@ -110,7 +110,7 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
 
     fn parse_stack(&mut self) -> IoResult<Instruction> {
         match self.tokens.next() {
-            Some(Ok(Space)) => Ok(ir::StackPush(try!(self.parse_number()))),
+            Some(Ok(Space)) => Ok(ir::StackPush(self.parse_number()?)),
             Some(Ok(LF)) => match self.tokens.next() {
                 Some(Ok(Space)) => Ok(ir::StackDuplicate),
                 Some(Ok(Tab)) => Ok(ir::StackSwap),
@@ -119,8 +119,8 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
                 None => Err(unknown_instruction("SN")),
             },
             Some(Ok(Tab)) => match self.tokens.next() {
-                Some(Ok(Space)) => Ok(ir::StackCopy(try!(self.parse_number()))),
-                Some(Ok(LF)) => Ok(ir::StackSlide(try!(self.parse_number()))),
+                Some(Ok(Space)) => Ok(ir::StackCopy(self.parse_number()?)),
+                Some(Ok(LF)) => Ok(ir::StackSlide(self.parse_number()?)),
                 Some(Ok(Tab)) => Err(unknown_instruction("STT")),
                 Some(Err(e)) => Err(e),
                 None => Err(unknown_instruction("ST")),
@@ -165,15 +165,15 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
     fn parse_flow(&mut self) -> IoResult<Instruction> {
         match self.tokens.next() {
             Some(Ok(Space)) => match self.tokens.next() {
-                Some(Ok(Space)) => Ok(ir::Mark(try!(self.parse_label()))),
-                Some(Ok(Tab)) => Ok(ir::Call(try!(self.parse_label()))),
-                Some(Ok(LF)) => Ok(ir::Jump(try!(self.parse_label()))),
+                Some(Ok(Space)) => Ok(ir::Mark(self.parse_label()?)),
+                Some(Ok(Tab)) => Ok(ir::Call(self.parse_label()?)),
+                Some(Ok(LF)) => Ok(ir::Jump(self.parse_label()?)),
                 Some(Err(e)) => Err(e),
                 None => Err(unknown_instruction("NS")),
             },
             Some(Ok(Tab)) => match self.tokens.next() {
-                Some(Ok(Space)) => Ok(ir::JumpIfZero(try!(self.parse_label()))),
-                Some(Ok(Tab)) => Ok(ir::JumpIfNegative(try!(self.parse_label()))),
+                Some(Ok(Space)) => Ok(ir::JumpIfZero(self.parse_label()?)),
+                Some(Ok(Tab)) => Ok(ir::JumpIfNegative(self.parse_label()?)),
                 Some(Ok(LF)) => Ok(ir::Return),
                 Some(Err(e)) => Err(e),
                 None => Err(unknown_instruction("NT")),
@@ -321,7 +321,7 @@ impl Decompiler for Whitespace {
         output: &mut W,
     ) -> IoResult<()> {
         for inst in input.disassemble() {
-            try!(match inst {
+            match inst {
                 Ok(ir::StackPush(n)) => write_num!(output, "  ", n),
                 Ok(ir::StackDuplicate) => write!(output, " \n "),
                 Ok(ir::StackCopy(n)) => write_num!(output, " \t ", n),
@@ -347,7 +347,7 @@ impl Decompiler for Whitespace {
                 Ok(ir::GetCharactor) => write!(output, "\t\n\t "),
                 Ok(ir::GetNumber) => write!(output, "\t\n\t\t"),
                 Err(e) => Err(e),
-            })
+            }?;
         }
         Ok(())
     }

@@ -76,97 +76,97 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         match program.read_inst() {
             Ok((bytecode::CMD_PUSH, n)) => {
                 debug!("PUSH {}", n);
-                try!(self.push(n));
+                self.push(n)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_DUP, _)) => {
                 debug!("DUP");
-                try!(self.copy(0));
+                self.copy(0)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_COPY, n)) => {
                 debug!("COPY {}", n);
-                try!(self.copy(n.to_uint().unwrap()));
+                self.copy(n.to_uint().unwrap())?;
                 Ok(true)
             }
             Ok((bytecode::CMD_SWAP, _)) => {
                 debug!("SWAP");
-                try!(self.swap());
+                self.swap()?;
                 Ok(true)
             }
             Ok((bytecode::CMD_DISCARD, _)) => {
                 debug!("SWAP");
-                try!(self.discard());
+                self.discard()?;
                 Ok(true)
             }
             Ok((bytecode::CMD_SLIDE, n)) => {
                 debug!("SLIDE {}", n);
-                try!(self.slide(n.to_uint().unwrap()));
+                self.slide(n.to_uint().unwrap())?;
                 Ok(true)
             }
             Ok((bytecode::CMD_ADD, _)) => {
                 debug!("ADD");
-                try!(self.calc(|x, y| { y + x }));
+                self.calc(|x, y| y + x)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_SUB, _)) => {
                 debug!("SUB");
-                try!(self.calc(|x, y| { y - x }));
+                self.calc(|x, y| y - x)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_MUL, _)) => {
                 debug!("MUL");
-                try!(self.calc(|x, y| { y * x }));
+                self.calc(|x, y| y * x)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_DIV, _)) => {
                 debug!("DIV");
-                try!(self.dcalc(|x, y| { y / x }));
+                self.dcalc(|x, y| y / x)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_MOD, _)) => {
                 debug!("MOD");
-                try!(self.dcalc(|x, y| { y % x }));
+                self.dcalc(|x, y| y % x)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_STORE, _)) => {
                 debug!("STORE");
-                try!(self.store());
+                self.store()?;
                 Ok(true)
             }
             Ok((bytecode::CMD_RETRIEVE, _)) => {
                 debug!("RETREIVE");
-                try!(self.retrieve());
+                self.retrieve()?;
                 Ok(true)
             }
             Ok((bytecode::CMD_MARK, n)) => {
                 debug!("MARK {}", n);
-                try!(self.mark(program, index, n));
+                self.mark(program, index, n)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_CALL, n)) => {
                 debug!("CALL {}", n);
-                try!(self.call(program, index, caller, &n));
+                self.call(program, index, caller, &n)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_JUMP, n)) => {
                 debug!("JUMP {}", n);
-                try!(self.jump(program, index, &n));
+                self.jump(program, index, &n)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_JUMPZ, n)) => {
                 debug!("JUMPZ {}", n);
-                try!(self.jump_if(program, index, &n, |x| { x == 0 }));
+                self.jump_if(program, index, &n, |x| x == 0)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_JUMPN, n)) => {
                 debug!("JUMPN {}", n);
-                try!(self.jump_if(program, index, &n, |x| { x < 0 }));
+                self.jump_if(program, index, &n, |x| x < 0)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_RETURN, _)) => {
                 debug!("RETURN");
-                try!(self.do_return(program, caller));
+                self.do_return(program, caller)?;
                 Ok(true)
             }
             Ok((bytecode::CMD_EXIT, _)) => {
@@ -175,22 +175,22 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
             }
             Ok((bytecode::CMD_PUTC, _)) => {
                 debug!("PUTC");
-                try!(self.put_char());
+                self.put_char()?;
                 Ok(true)
             }
             Ok((bytecode::CMD_PUTN, _)) => {
                 debug!("PUTN");
-                try!(self.put_num());
+                self.put_num()?;
                 Ok(true)
             }
             Ok((bytecode::CMD_GETC, _)) => {
                 debug!("GETC");
-                try!(self.get_char());
+                self.get_char()?;
                 Ok(true)
             }
             Ok((bytecode::CMD_GETN, _)) => {
                 debug!("GETN");
-                try!(self.get_num());
+                self.get_num()?;
                 Ok(true)
             }
             Err(ref e) if e.kind == EndOfFile => Err(MissingExitInstruction),
@@ -424,7 +424,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         match self.stdin.read_char() {
             Ok(c) => {
                 self.stack.push(c as i64);
-                try!(self.store());
+                self.store()?;
                 Ok(())
             }
             Err(err) => Err(MachineIoError(err)),
@@ -436,7 +436,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
             Ok(line) => match from_str(line.replace("\n", "").as_slice()) {
                 Some(n) => {
                     self.stack.push(n);
-                    try!(self.store());
+                    self.store()?;
                     Ok(())
                 }
                 None => Err(MachineIoError(standard_error(InvalidInput))),

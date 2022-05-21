@@ -96,7 +96,7 @@ pub trait ByteCodeWriter {
 impl<W: Writer> ByteCodeWriter for W {
     fn assemble<I: Iterator<IoResult<Instruction>>>(&mut self, iter: &mut I) -> IoResult<()> {
         for inst in *iter {
-            try!(match inst {
+            match inst {
                 Ok(ir::StackPush(n)) => self.write_push(n),
                 Ok(ir::StackDuplicate) => self.write_dup(),
                 Ok(ir::StackCopy(n)) => self.write_copy(n),
@@ -122,13 +122,13 @@ impl<W: Writer> ByteCodeWriter for W {
                 Ok(ir::GetCharactor) => self.write_getc(),
                 Ok(ir::GetNumber) => self.write_getn(),
                 Err(e) => Err(e),
-            });
+            }?;
         }
         Ok(())
     }
 
     fn write_push(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_PUSH));
+        self.write_u8(CMD_PUSH)?;
         self.write_be_i64(n)
     }
 
@@ -137,7 +137,7 @@ impl<W: Writer> ByteCodeWriter for W {
     }
 
     fn write_copy(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_COPY));
+        self.write_u8(CMD_COPY)?;
         self.write_be_i64(n)
     }
 
@@ -150,7 +150,7 @@ impl<W: Writer> ByteCodeWriter for W {
     }
 
     fn write_slide(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_SLIDE));
+        self.write_u8(CMD_SLIDE)?;
         self.write_be_i64(n)
     }
 
@@ -183,27 +183,27 @@ impl<W: Writer> ByteCodeWriter for W {
     }
 
     fn write_mark(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_MARK));
+        self.write_u8(CMD_MARK)?;
         self.write_be_i64(n)
     }
 
     fn write_call(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_CALL));
+        self.write_u8(CMD_CALL)?;
         self.write_be_i64(n)
     }
 
     fn write_jump(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_JUMP));
+        self.write_u8(CMD_JUMP)?;
         self.write_be_i64(n)
     }
 
     fn write_jumpz(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_JUMPZ));
+        self.write_u8(CMD_JUMPZ)?;
         self.write_be_i64(n)
     }
 
     fn write_jumpn(&mut self, n: i64) -> IoResult<()> {
-        try!(self.write_u8(CMD_JUMPN));
+        self.write_u8(CMD_JUMPN)?;
         self.write_be_i64(n)
     }
 
@@ -309,7 +309,7 @@ impl<R: Reader + Seek> ByteCodeReader for R {
                     || n == CMD_JUMPZ
                     || n == CMD_JUMPN =>
             {
-                Ok((n, try!(self.read_be_i64())))
+                Ok((n, self.read_be_i64()?))
             }
             Ok(n) => Ok((n, 0)),
             Err(e) => Err(e),

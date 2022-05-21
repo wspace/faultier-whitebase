@@ -130,7 +130,7 @@ impl Decompiler for DT {
         output: &mut W,
     ) -> IoResult<()> {
         for inst in input.disassemble() {
-            try!(match inst {
+            match inst {
                 Ok(ir::StackPush(n)) => self.write_num(output, [S, S], n),
                 Ok(ir::StackDuplicate) => self.write(output, [S, N, S]),
                 Ok(ir::StackCopy(n)) => self.write_num(output, [S, T, S], n),
@@ -156,7 +156,7 @@ impl Decompiler for DT {
                 Ok(ir::GetCharactor) => self.write(output, [T, N, T, S]),
                 Ok(ir::GetNumber) => self.write(output, [T, N, T, T]),
                 Err(e) => Err(e),
-            });
+            }?;
         }
         Ok(())
     }
