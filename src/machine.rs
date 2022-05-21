@@ -1,6 +1,7 @@
 //! A virtual machine that execute Whitebase bytecode.
 
 use std::collections::{HashMap, TreeMap};
+use std::convert::{TryFrom, TryInto};
 use std::io::stdio::{stdin, stdout_raw, StdReader, StdWriter};
 use std::io::{standard_error, BufferedReader, EndOfFile, InvalidInput, IoError, SeekSet};
 
@@ -86,7 +87,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
             }
             Ok((bytecode::CMD_COPY, n)) => {
                 debug!("COPY {}", n);
-                self.copy(n.to_uint().unwrap())?;
+                self.copy(n.try_into().unwrap())?;
                 Ok(true)
             }
             Ok((bytecode::CMD_SWAP, _)) => {
@@ -101,7 +102,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
             }
             Ok((bytecode::CMD_SLIDE, n)) => {
                 debug!("SLIDE {}", n);
-                self.slide(n.to_uint().unwrap())?;
+                self.slide(n.try_into().unwrap())?;
                 Ok(true)
             }
             Ok((bytecode::CMD_ADD, _)) => {
@@ -204,7 +205,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         Ok(())
     }
 
-    fn copy(&mut self, n: uint) -> MachineResult<()> {
+    fn copy(&mut self, n: usize) -> MachineResult<()> {
         if self.stack.len() <= n {
             return Err(IllegalStackManipulation);
         }
@@ -242,7 +243,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         }
     }
 
-    fn slide(&mut self, n: uint) -> MachineResult<()> {
+    fn slide(&mut self, n: usize) -> MachineResult<()> {
         if self.stack.len() < n {
             Err(IllegalStackManipulation)
         } else {
@@ -401,10 +402,12 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
 
     fn put_char(&mut self) -> MachineResult<()> {
         match self.stack.pop() {
-            Some(n) if n >= 0 => match write!(self.stdout, "{}", n.to_u8().unwrap() as char) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(MachineIoError(e)),
-            },
+            Some(n) if n >= 0 => {
+                match write!(self.stdout, "{}", u8::try_from(n).unwrap() as char) {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(MachineIoError(e)),
+                }
+            }
             Some(_) => Err(IllegalStackManipulation),
             None => Err(IllegalStackManipulation),
         }
