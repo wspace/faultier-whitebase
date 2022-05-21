@@ -7,9 +7,9 @@ use ir;
 use syntax::whitespace::{Instructions, Space, Tab, Token, LF};
 use syntax::{Compiler, Decompiler};
 
-static S: &'static str = "ど";
-static T: &'static str = "童貞ちゃうわっ！";
-static N: &'static str = "…";
+const S: &'static str = "ど";
+const T: &'static str = "童貞ちゃうわっ！";
+const N: &'static str = "…";
 
 struct Tokens<T> {
     lexemes: T,
@@ -169,9 +169,9 @@ mod test {
     use syntax::whitespace::{Space, Tab, LF};
     use syntax::Decompiler;
 
-    static S: &'static str = "ど";
-    static T: &'static str = "童貞ちゃうわっ！";
-    static N: &'static str = "…";
+    const S: &'static str = "ど";
+    const T: &'static str = "童貞ちゃうわっ！";
+    const N: &'static str = "…";
 
     #[test]
     fn test_scan() {

@@ -37,10 +37,10 @@ fn main() {
 
 extern crate log;
 
-pub static VERSION_MAJOR: usize = 0;
-pub static VERSION_MINOR: usize = 1;
-pub static VERSION_TINY: usize = 0;
-pub static PRE_RELEASE: bool = true;
+pub const VERSION_MAJOR: usize = 0;
+pub const VERSION_MINOR: usize = 1;
+pub const VERSION_TINY: usize = 0;
+pub const PRE_RELEASE: bool = true;
 
 /// Build version string.
 pub fn version() -> String {

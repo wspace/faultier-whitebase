@@ -9,8 +9,8 @@ use ir;
 use ir::Instruction;
 use syntax::Compiler;
 
-pub static BF_FAIL_MARKER: i64 = -1;
-pub static BF_PTR_ADDR: i64 = -1;
+pub const BF_FAIL_MARKER: i64 = -1;
+pub const BF_PTR_ADDR: i64 = -1;
 
 /// An iterator that convert to IR from brainfuck tokens on each iteration.
 pub struct Instructions<T> {
