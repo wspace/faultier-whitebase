@@ -236,6 +236,8 @@ pub enum Token {
     LF,
 }
 
+pub use self::Token::*;
+
 struct Tokens<T> {
     lexemes: T,
 }

@@ -28,3 +28,5 @@ pub enum Instruction {
     GetCharactor,
     GetNumber,
 }
+
+pub use self::Instruction::*;

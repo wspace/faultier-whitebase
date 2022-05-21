@@ -154,6 +154,8 @@ pub enum Token {
     LoopEnd,
 }
 
+pub use self::Token::*;
+
 struct Tokens<T> {
     lexemes: T,
 }

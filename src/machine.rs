@@ -31,6 +31,8 @@ pub enum MachineError {
     OtherMachineError,
 }
 
+use self::MachineError::*;
+
 /// A virtual machine.
 pub struct Machine<B, W> {
     stack: Vec<i64>,
