@@ -9,7 +9,8 @@ pub use self::ook::Ook;
 pub use self::whitespace::Whitespace;
 
 use std::io::IoResult;
-use bytecode::{ByteCodeWriter, ByteCodeReader};
+
+use bytecode::{ByteCodeReader, ByteCodeWriter};
 
 /// Convert from source code to bytecodes.
 pub trait Compiler {

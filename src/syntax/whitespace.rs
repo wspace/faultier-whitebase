@@ -3,8 +3,8 @@
 #![experimental]
 
 use std::collections::HashMap;
-use std::io::{EndOfFile, InvalidInput, IoError, IoResult, standard_error};
-use std::iter::{Counter, count};
+use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
+use std::iter::{count, Counter};
 use std::num::from_str_radix;
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -14,12 +14,17 @@ use syntax::{Compiler, Decompiler};
 
 macro_rules! write_num (
     ($w:expr, $cmd:expr, $n:expr) => (
-        write!($w, "{}{}", $cmd,
-               (if $n < 0 {
-                   format!("\t{:t}\n", $n*-1)
-               } else {
-                   format!(" {:t}\n", $n)
-               }).replace("0"," ").replace("1","\t")
+        write!(
+            $w,
+            "{}{}",
+            $cmd,
+            if $n < 0 {
+                format!("\t{:t}\n", $n * -1)
+            } else {
+                format!(" {:t}\n", $n)
+            }
+            .replace("0", " ")
+            .replace("1", "\t")
         )
     )
 );
@@ -57,11 +62,13 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
                 Some(Ok(Tab)) => value.push_char('1'),
                 Some(Ok(LF)) => break,
                 Some(Err(e)) => return Err(e),
-                None => return Err(IoError {
-                    kind: InvalidInput,
-                    desc: "syntax error",
-                    detail: Some("no value terminator".to_string()),
-                }),
+                None => {
+                    return Err(IoError {
+                        kind: InvalidInput,
+                        desc: "syntax error",
+                        detail: Some("no value terminator".to_string()),
+                    })
+                }
             }
         }
         Ok(value)
@@ -97,7 +104,7 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
                 let val = self.count.next().unwrap();
                 self.labels.insert(label, val);
                 Ok(val)
-            },
+            }
         }
     }
 
@@ -212,13 +219,13 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
             Some(Ok(Space)) => Some(self.parse_stack()),
             Some(Ok(Tab)) => match self.tokens.next() {
                 Some(Ok(Space)) => Some(self.parse_arithmetic()),
-                Some(Ok(Tab))   => Some(self.parse_heap()),
-                Some(Ok(LF))    => Some(self.parse_io()),
-                _               => Some(Err(standard_error(InvalidInput))),
+                Some(Ok(Tab)) => Some(self.parse_heap()),
+                Some(Ok(LF)) => Some(self.parse_io()),
+                _ => Some(Err(standard_error(InvalidInput))),
             },
             Some(Ok(LF)) => Some(self.parse_flow()),
             Some(Err(e)) => Some(Err(e)),
-            None         => None,
+            None => None,
         }
     }
 }
@@ -232,34 +239,40 @@ pub enum Token {
 }
 
 struct Tokens<T> {
-    lexemes: T
+    lexemes: T,
 }
 
 impl<I: Iterator<IoResult<char>>> Tokens<I> {
-    pub fn parse(self) -> Instructions<Tokens<I>> { Instructions::new(self) }
+    pub fn parse(self) -> Instructions<Tokens<I>> {
+        Instructions::new(self)
+    }
 }
 
 impl<I: Iterator<IoResult<char>>> Iterator<IoResult<Token>> for Tokens<I> {
     fn next(&mut self) -> Option<IoResult<Token>> {
         let c = self.lexemes.next();
-        if c.is_none() { return None; }
+        if c.is_none() {
+            return None;
+        }
 
         Some(match c.unwrap() {
-            Ok(' ')  => Ok(Space),
+            Ok(' ') => Ok(Space),
             Ok('\t') => Ok(Tab),
             Ok('\n') => Ok(LF),
-            Ok(_)    => Err(standard_error(InvalidInput)),
-            Err(e)   => Err(e),
+            Ok(_) => Err(standard_error(InvalidInput)),
+            Err(e) => Err(e),
         })
     }
 }
 
 struct Scan<'r, T> {
-    buffer: &'r mut T
+    buffer: &'r mut T,
 }
 
 impl<'r, B: Buffer> Scan<'r, B> {
-    pub fn tokenize(self) -> Tokens<Scan<'r, B>> { Tokens { lexemes: self } }
+    pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
+        Tokens { lexemes: self }
+    }
 }
 
 impl<'r, B: Buffer> Iterator<IoResult<char>> for Scan<'r, B> {
@@ -270,7 +283,9 @@ impl<'r, B: Buffer> Iterator<IoResult<char>> for Scan<'r, B> {
                 Ok('\t') => '\t',
                 Ok('\n') => '\n',
                 Ok(_) => continue,
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+                Err(IoError {
+                    kind: EndOfFile, ..
+                }) => return None,
                 Err(e) => return Some(Err(e)),
             };
             return Some(Ok(ret));
@@ -278,14 +293,18 @@ impl<'r, B: Buffer> Iterator<IoResult<char>> for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> { Scan { buffer: buffer } }
+fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
+    Scan { buffer: buffer }
+}
 
 /// Compiler and Decompiler for Whitespace.
 pub struct Whitespace;
 
 impl Whitespace {
     /// Create a new `Whitespace`.
-    pub fn new() -> Whitespace { Whitespace }
+    pub fn new() -> Whitespace {
+        Whitespace
+    }
 }
 
 impl Compiler for Whitespace {
@@ -296,34 +315,38 @@ impl Compiler for Whitespace {
 }
 
 impl Decompiler for Whitespace {
-    fn decompile<R: ByteCodeReader, W: Writer>(&self, input: &mut R, output: &mut W) -> IoResult<()> {
+    fn decompile<R: ByteCodeReader, W: Writer>(
+        &self,
+        input: &mut R,
+        output: &mut W,
+    ) -> IoResult<()> {
         for inst in input.disassemble() {
             try!(match inst {
-                Ok(ir::StackPush(n))       => write_num!(output, "  ", n),
-                Ok(ir::StackDuplicate)     => write!(output, " \n "),
-                Ok(ir::StackCopy(n))       => write_num!(output, " \t ", n),
-                Ok(ir::StackSwap)          => write!(output, " \n\t"),
-                Ok(ir::StackDiscard)       => write!(output, " \n\n"),
-                Ok(ir::StackSlide(n))      => write_num!(output, " \t\n", n),
-                Ok(ir::Addition)           => write!(output, "\t   "),
-                Ok(ir::Subtraction)        => write!(output, "\t  \t"),
-                Ok(ir::Multiplication)     => write!(output, "\t  \n"),
-                Ok(ir::Division)           => write!(output, "\t \t "),
-                Ok(ir::Modulo)             => write!(output, "\t \t\t"),
-                Ok(ir::HeapStore)          => write!(output, "\t\t "),
-                Ok(ir::HeapRetrieve)       => write!(output, "\t\t\t"),
-                Ok(ir::Mark(n))            => write_num!(output, "\n  ", n),
-                Ok(ir::Call(n))            => write_num!(output, "\n \t", n),
-                Ok(ir::Jump(n))            => write_num!(output, "\n \n", n),
-                Ok(ir::JumpIfZero(n))      => write_num!(output, "\n\t ", n),
-                Ok(ir::JumpIfNegative(n))  => write_num!(output, "\n\t\t", n),
-                Ok(ir::Return)             => write!(output, "\n\t\n"),
-                Ok(ir::Exit)               => write!(output, "\n\n\n"),
-                Ok(ir::PutCharactor)       => write!(output, "\t\n  "),
-                Ok(ir::PutNumber)          => write!(output, "\t\n \t"),
-                Ok(ir::GetCharactor)       => write!(output, "\t\n\t "),
-                Ok(ir::GetNumber)          => write!(output, "\t\n\t\t"),
-                Err(e)                     => Err(e),
+                Ok(ir::StackPush(n)) => write_num!(output, "  ", n),
+                Ok(ir::StackDuplicate) => write!(output, " \n "),
+                Ok(ir::StackCopy(n)) => write_num!(output, " \t ", n),
+                Ok(ir::StackSwap) => write!(output, " \n\t"),
+                Ok(ir::StackDiscard) => write!(output, " \n\n"),
+                Ok(ir::StackSlide(n)) => write_num!(output, " \t\n", n),
+                Ok(ir::Addition) => write!(output, "\t   "),
+                Ok(ir::Subtraction) => write!(output, "\t  \t"),
+                Ok(ir::Multiplication) => write!(output, "\t  \n"),
+                Ok(ir::Division) => write!(output, "\t \t "),
+                Ok(ir::Modulo) => write!(output, "\t \t\t"),
+                Ok(ir::HeapStore) => write!(output, "\t\t "),
+                Ok(ir::HeapRetrieve) => write!(output, "\t\t\t"),
+                Ok(ir::Mark(n)) => write_num!(output, "\n  ", n),
+                Ok(ir::Call(n)) => write_num!(output, "\n \t", n),
+                Ok(ir::Jump(n)) => write_num!(output, "\n \n", n),
+                Ok(ir::JumpIfZero(n)) => write_num!(output, "\n\t ", n),
+                Ok(ir::JumpIfNegative(n)) => write_num!(output, "\n\t\t", n),
+                Ok(ir::Return) => write!(output, "\n\t\n"),
+                Ok(ir::Exit) => write!(output, "\n\n\n"),
+                Ok(ir::PutCharactor) => write!(output, "\t\n  "),
+                Ok(ir::PutNumber) => write!(output, "\t\n \t"),
+                Ok(ir::GetCharactor) => write!(output, "\t\n\t "),
+                Ok(ir::GetNumber) => write!(output, "\t\n\t\t"),
+                Err(e) => Err(e),
             })
         }
         Ok(())
@@ -332,13 +355,12 @@ impl Decompiler for Whitespace {
 
 #[cfg(test)]
 mod test {
-    use std::io::{MemReader, MemWriter};
+    use std::io::{BufReader, MemReader, MemWriter};
     use std::str::from_utf8;
+
     use bytecode::ByteCodeWriter;
     use ir::*;
     use syntax::Decompiler;
-
-    use std::io::BufReader;
 
     #[test]
     fn test_scan() {
@@ -362,32 +384,33 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let source = vec!(
-            "   \t\n",      // PUSH 1
-            " \n ",         // DUP
-            " \t  \t\n",    // COPY 1
-            " \n\t",        // SWAP
-            " \n\n",        // DISCARD
-            " \t\n \t\n",   // SLIDE 1
-            "\t   ",        // ADD
-            "\t  \t",       // SUB
-            "\t  \n",       // MUL
-            "\t \t ",       // DIV
-            "\t \t\t",      // MOD
-            "\t\t ",        // STORE
-            "\t\t\t",       // RETRIEVE
-            "\n   \t\n",    // MARK 01
-            "\n \t\t \n",   // CALL 10
-            "\n \n \t\n",   // JUMP 01
-            "\n\t \t \n",   // JUMPZ 10
-            "\n\t\t \t\n",  // JUMPN 01
-            "\n\t\n",       // RETURN
-            "\n\n\n",       // EXIT
-            "\t\n  ",       // PUTC
-            "\t\n \t",      // PUTN
-            "\t\n\t ",      // GETC
-            "\t\n\t\t",     // GETN
-            ).concat();
+        let source = vec![
+            "   \t\n",     // PUSH 1
+            " \n ",        // DUP
+            " \t  \t\n",   // COPY 1
+            " \n\t",       // SWAP
+            " \n\n",       // DISCARD
+            " \t\n \t\n",  // SLIDE 1
+            "\t   ",       // ADD
+            "\t  \t",      // SUB
+            "\t  \n",      // MUL
+            "\t \t ",      // DIV
+            "\t \t\t",     // MOD
+            "\t\t ",       // STORE
+            "\t\t\t",      // RETRIEVE
+            "\n   \t\n",   // MARK 01
+            "\n \t\t \n",  // CALL 10
+            "\n \n \t\n",  // JUMP 01
+            "\n\t \t \n",  // JUMPZ 10
+            "\n\t\t \t\n", // JUMPN 01
+            "\n\t\n",      // RETURN
+            "\n\n\n",      // EXIT
+            "\t\n  ",      // PUTC
+            "\t\n \t",     // PUTN
+            "\t\n\t ",     // GETC
+            "\t\n\t\t",    // GETN
+        ]
+        .concat();
         let mut buffer = BufReader::new(source.as_slice().as_bytes());
         let mut it = super::scan(&mut buffer).tokenize().parse();
         assert_eq!(it.next(), Some(Ok(StackPush(1))));
@@ -451,14 +474,41 @@ mod test {
             let syntax = super::Whitespace::new();
             syntax.decompile(&mut bcr, &mut writer).unwrap();
         }
-        let result = from_utf8(writer.get_ref()).unwrap().replace(" ", "S").replace("\t", "T").replace("\n", "N");
-        let expected = vec!(
-            "   \t\n", " \n ", " \t  \t \n", " \n\t", " \n\n", " \t\n \t\t\n",
-            "\t   ", "\t  \t", "\t  \n", "\t \t ", "\t \t\t",
-            "\t\t ", "\t\t\t",
-            "\n   \t\n", "\n \t \t\n", "\n \n \t\n", "\n\t  \t\n", "\n\t\t \t\n", "\n\t\n", "\n\n\n",
-            "\t\n  ", "\t\n \t", "\t\n\t ", "\t\n\t\t"
-            ).concat().replace(" ", "S").replace("\t", "T").replace("\n", "N");
+        let result = from_utf8(writer.get_ref())
+            .unwrap()
+            .replace(" ", "S")
+            .replace("\t", "T")
+            .replace("\n", "N");
+        let expected = vec![
+            "   \t\n",
+            " \n ",
+            " \t  \t \n",
+            " \n\t",
+            " \n\n",
+            " \t\n \t\t\n",
+            "\t   ",
+            "\t  \t",
+            "\t  \n",
+            "\t \t ",
+            "\t \t\t",
+            "\t\t ",
+            "\t\t\t",
+            "\n   \t\n",
+            "\n \t \t\n",
+            "\n \n \t\n",
+            "\n\t  \t\n",
+            "\n\t\t \t\n",
+            "\n\t\n",
+            "\n\n\n",
+            "\t\n  ",
+            "\t\n \t",
+            "\t\n\t ",
+            "\t\n\t\t",
+        ]
+        .concat()
+        .replace(" ", "S")
+        .replace("\t", "T")
+        .replace("\n", "N");
         assert_eq!(result, expected);
     }
 }

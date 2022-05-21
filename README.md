@@ -19,6 +19,7 @@ This project provides infrastructure for implementing esolang.
 extern crate whitebase;
 
 use std::io::{BufReader, MemReader, MemWriter};
+
 use whitebase::machine;
 use whitebase::syntax::{Compiler, Whitespace};
 
@@ -36,7 +37,7 @@ fn main() {
                 Err(e) => fail!("{}", e),
                 _ => (),
             }
-        },
+        }
     }
 }
 ```

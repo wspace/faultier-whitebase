@@ -2,34 +2,38 @@
 
 #![experimental]
 
-use std::io::{EndOfFile, InvalidInput, IoError, IoResult, standard_error};
+use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
 use ir;
+use syntax::whitespace::{Instructions, Space, Tab, Token, LF};
 use syntax::{Compiler, Decompiler};
-use syntax::whitespace::{Instructions, Token, Space, Tab, LF};
 
 static S: &'static str = "ど";
 static T: &'static str = "童貞ちゃうわっ！";
 static N: &'static str = "…";
 
 struct Tokens<T> {
-    lexemes: T
+    lexemes: T,
 }
 
 impl<I: Iterator<IoResult<String>>> Tokens<I> {
-    pub fn parse(self) -> Instructions<Tokens<I>> { Instructions::new(self) }
+    pub fn parse(self) -> Instructions<Tokens<I>> {
+        Instructions::new(self)
+    }
 }
 
 impl<I: Iterator<IoResult<String>>> Iterator<IoResult<Token>> for Tokens<I> {
     fn next(&mut self) -> Option<IoResult<Token>> {
         let op = self.lexemes.next();
-        if op.is_none() { return None; }
+        if op.is_none() {
+            return None;
+        }
 
         let res = op.unwrap();
-         match res {
-             Err(e) => return Some(Err(e)),
-             Ok(_) => (),
+        match res {
+            Err(e) => return Some(Err(e)),
+            Ok(_) => (),
         }
 
         Some(match res.unwrap().as_slice() {
@@ -42,11 +46,13 @@ impl<I: Iterator<IoResult<String>>> Iterator<IoResult<Token>> for Tokens<I> {
 }
 
 struct Scan<'r, T> {
-    buffer: &'r mut T
+    buffer: &'r mut T,
 }
 
 impl<'r, B: Buffer> Scan<'r, B> {
-    pub fn tokenize(self) -> Tokens<Scan<'r, B>> { Tokens { lexemes: self } }
+    pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
+        Tokens { lexemes: self }
+    }
 }
 
 impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
@@ -59,29 +65,37 @@ impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
                     for i in range(1u, 8) {
                         match self.buffer.read_char() {
                             Ok(c) => {
-                                if c != T.char_at(i*3) { continue 'outer; }
-                            },
+                                if c != T.char_at(i * 3) {
+                                    continue 'outer;
+                                }
+                            }
                             Err(e) => return Some(Err(e)),
                         }
                     }
                     return Some(Ok(T.to_string()));
-                },
+                }
                 Ok(_) => continue,
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+                Err(IoError {
+                    kind: EndOfFile, ..
+                }) => return None,
                 Err(e) => return Some(Err(e)),
             }
         }
     }
 }
 
-fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> { Scan { buffer: buffer } }
+fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
+    Scan { buffer: buffer }
+}
 
 /// Compiler and Decompiler for DT.
 pub struct DT;
 
 impl DT {
     /// Create a new `DT`.
-    pub fn new() -> DT { DT }
+    pub fn new() -> DT {
+        DT
+    }
 
     #[inline]
     fn write<W: Writer>(&self, output: &mut W, inst: &[&'static str]) -> IoResult<()> {
@@ -90,12 +104,15 @@ impl DT {
 
     #[inline]
     fn write_num<W: Writer>(&self, output: &mut W, cmd: &[&'static str], n: i64) -> IoResult<()> {
-        let (flag, value) = if n < 0 { (T, n*-1) } else { (S, n) };
-        write!(output, "{}{}{}{}",
-               cmd.concat(),
-               flag,
-               format!("{:t}", value).replace("0", S).replace("1", T),
-               N)
+        let (flag, value) = if n < 0 { (T, n * -1) } else { (S, n) };
+        write!(
+            output,
+            "{}{}{}{}",
+            cmd.concat(),
+            flag,
+            format!("{:t}", value).replace("0", S).replace("1", T),
+            N
+        )
     }
 }
 
@@ -107,34 +124,38 @@ impl Compiler for DT {
 }
 
 impl Decompiler for DT {
-    fn decompile<R: ByteCodeReader, W: Writer>(&self, input: &mut R, output: &mut W) -> IoResult<()> {
+    fn decompile<R: ByteCodeReader, W: Writer>(
+        &self,
+        input: &mut R,
+        output: &mut W,
+    ) -> IoResult<()> {
         for inst in input.disassemble() {
             try!(match inst {
-                Ok(ir::StackPush(n))      => self.write_num(output, [S, S], n),
-                Ok(ir::StackDuplicate)    => self.write(output, [S, N, S]),
-                Ok(ir::StackCopy(n))      => self.write_num(output, [S, T, S], n),
-                Ok(ir::StackSwap)         => self.write(output, [S, N, T]),
-                Ok(ir::StackDiscard)      => self.write(output, [S, N, N]),
-                Ok(ir::StackSlide(n))     => self.write_num(output, [S, T, N], n),
-                Ok(ir::Addition)          => self.write(output, [T, S, S, S]),
-                Ok(ir::Subtraction)       => self.write(output, [T, S, S, T]),
-                Ok(ir::Multiplication)    => self.write(output, [T, S, S, N]),
-                Ok(ir::Division)          => self.write(output, [T, S, T, S]),
-                Ok(ir::Modulo)            => self.write(output, [T, S, T, T]),
-                Ok(ir::HeapStore)         => self.write(output, [T, T, S]),
-                Ok(ir::HeapRetrieve)      => self.write(output, [T, T, T]),
-                Ok(ir::Mark(n))           => self.write_num(output, [N, S, S], n),
-                Ok(ir::Call(n))           => self.write_num(output, [N, S, T], n),
-                Ok(ir::Jump(n))           => self.write_num(output, [N, S, N], n),
-                Ok(ir::JumpIfZero(n))     => self.write_num(output, [N, T, S], n),
+                Ok(ir::StackPush(n)) => self.write_num(output, [S, S], n),
+                Ok(ir::StackDuplicate) => self.write(output, [S, N, S]),
+                Ok(ir::StackCopy(n)) => self.write_num(output, [S, T, S], n),
+                Ok(ir::StackSwap) => self.write(output, [S, N, T]),
+                Ok(ir::StackDiscard) => self.write(output, [S, N, N]),
+                Ok(ir::StackSlide(n)) => self.write_num(output, [S, T, N], n),
+                Ok(ir::Addition) => self.write(output, [T, S, S, S]),
+                Ok(ir::Subtraction) => self.write(output, [T, S, S, T]),
+                Ok(ir::Multiplication) => self.write(output, [T, S, S, N]),
+                Ok(ir::Division) => self.write(output, [T, S, T, S]),
+                Ok(ir::Modulo) => self.write(output, [T, S, T, T]),
+                Ok(ir::HeapStore) => self.write(output, [T, T, S]),
+                Ok(ir::HeapRetrieve) => self.write(output, [T, T, T]),
+                Ok(ir::Mark(n)) => self.write_num(output, [N, S, S], n),
+                Ok(ir::Call(n)) => self.write_num(output, [N, S, T], n),
+                Ok(ir::Jump(n)) => self.write_num(output, [N, S, N], n),
+                Ok(ir::JumpIfZero(n)) => self.write_num(output, [N, T, S], n),
                 Ok(ir::JumpIfNegative(n)) => self.write_num(output, [N, T, T], n),
-                Ok(ir::Return)            => self.write(output, [N, T, N]),
-                Ok(ir::Exit)              => self.write(output, [N, N, N]),
-                Ok(ir::PutCharactor)      => self.write(output, [T, N, S, S]),
-                Ok(ir::PutNumber)         => self.write(output, [T, N, S, T]),
-                Ok(ir::GetCharactor)      => self.write(output, [T, N, T, S]),
-                Ok(ir::GetNumber)         => self.write(output, [T, N, T, T]),
-                Err(e)                    => Err(e),
+                Ok(ir::Return) => self.write(output, [N, T, N]),
+                Ok(ir::Exit) => self.write(output, [N, N, N]),
+                Ok(ir::PutCharactor) => self.write(output, [T, N, S, S]),
+                Ok(ir::PutNumber) => self.write(output, [T, N, S, T]),
+                Ok(ir::GetCharactor) => self.write(output, [T, N, T, S]),
+                Ok(ir::GetNumber) => self.write(output, [T, N, T, T]),
+                Err(e) => Err(e),
             });
         }
         Ok(())
@@ -147,8 +168,8 @@ mod test {
     use std::str::from_utf8;
 
     use bytecode::ByteCodeWriter;
-    use syntax::Decompiler;
     use syntax::whitespace::{Space, Tab, LF};
+    use syntax::Decompiler;
 
     static S: &'static str = "ど";
     static T: &'static str = "童貞ちゃうわっ！";
@@ -156,7 +177,7 @@ mod test {
 
     #[test]
     fn test_scan() {
-        let source = vec!(S, "童貞饂飩ちゃうわっ！", T, "\n", N).concat();
+        let source = vec![S, "童貞饂飩ちゃうわっ！", T, "\n", N].concat();
         let mut buffer = BufReader::new(source.as_slice().as_bytes());
         let mut it = super::scan(&mut buffer);
         assert_eq!(it.next(), Some(Ok(S.to_string())));
@@ -167,7 +188,7 @@ mod test {
 
     #[test]
     fn test_tokenize() {
-        let source = vec!(S, "童貞饂飩ちゃうわっ！", T, "\n", N).concat();
+        let source = vec![S, "童貞饂飩ちゃうわっ！", T, "\n", N].concat();
         let mut buffer = BufReader::new(source.as_slice().as_bytes());
         let mut it = super::scan(&mut buffer).tokenize();
         assert_eq!(it.next(), Some(Ok(Space)));
@@ -211,32 +232,33 @@ mod test {
             syntax.decompile(&mut bcr, &mut writer).unwrap();
         }
         let result = from_utf8(writer.get_ref()).unwrap();
-        let expected = vec!(
-           "どど童貞ちゃうわっ！童貞ちゃうわっ！…",
-           "ど…ど",
-           "ど童貞ちゃうわっ！どど童貞ちゃうわっ！ど…",
-           "ど…童貞ちゃうわっ！",
-           "ど……",
-           "ど童貞ちゃうわっ！…ど童貞ちゃうわっ！童貞ちゃうわっ！…",
-           "童貞ちゃうわっ！どどど",
-           "童貞ちゃうわっ！どど童貞ちゃうわっ！",
-           "童貞ちゃうわっ！どど…",
-           "童貞ちゃうわっ！ど童貞ちゃうわっ！ど",
-           "童貞ちゃうわっ！ど童貞ちゃうわっ！童貞ちゃうわっ！",
-           "童貞ちゃうわっ！童貞ちゃうわっ！ど",
-           "童貞ちゃうわっ！童貞ちゃうわっ！童貞ちゃうわっ！",
-           "…どどど童貞ちゃうわっ！…",
-           "…ど童貞ちゃうわっ！ど童貞ちゃうわっ！…",
-           "…ど…ど童貞ちゃうわっ！…",
-           "…童貞ちゃうわっ！どど童貞ちゃうわっ！…",
-           "…童貞ちゃうわっ！童貞ちゃうわっ！ど童貞ちゃうわっ！…",
-           "…童貞ちゃうわっ！…",
-           "………",
-           "童貞ちゃうわっ！…どど",
-           "童貞ちゃうわっ！…ど童貞ちゃうわっ！",
-           "童貞ちゃうわっ！…童貞ちゃうわっ！ど",
-           "童貞ちゃうわっ！…童貞ちゃうわっ！童貞ちゃうわっ！",
-        ).concat();
+        let expected = vec![
+            "どど童貞ちゃうわっ！童貞ちゃうわっ！…",
+            "ど…ど",
+            "ど童貞ちゃうわっ！どど童貞ちゃうわっ！ど…",
+            "ど…童貞ちゃうわっ！",
+            "ど……",
+            "ど童貞ちゃうわっ！…ど童貞ちゃうわっ！童貞ちゃうわっ！…",
+            "童貞ちゃうわっ！どどど",
+            "童貞ちゃうわっ！どど童貞ちゃうわっ！",
+            "童貞ちゃうわっ！どど…",
+            "童貞ちゃうわっ！ど童貞ちゃうわっ！ど",
+            "童貞ちゃうわっ！ど童貞ちゃうわっ！童貞ちゃうわっ！",
+            "童貞ちゃうわっ！童貞ちゃうわっ！ど",
+            "童貞ちゃうわっ！童貞ちゃうわっ！童貞ちゃうわっ！",
+            "…どどど童貞ちゃうわっ！…",
+            "…ど童貞ちゃうわっ！ど童貞ちゃうわっ！…",
+            "…ど…ど童貞ちゃうわっ！…",
+            "…童貞ちゃうわっ！どど童貞ちゃうわっ！…",
+            "…童貞ちゃうわっ！童貞ちゃうわっ！ど童貞ちゃうわっ！…",
+            "…童貞ちゃうわっ！…",
+            "………",
+            "童貞ちゃうわっ！…どど",
+            "童貞ちゃうわっ！…ど童貞ちゃうわっ！",
+            "童貞ちゃうわっ！…童貞ちゃうわっ！ど",
+            "童貞ちゃうわっ！…童貞ちゃうわっ！童貞ちゃうわっ！",
+        ]
+        .concat();
         assert_eq!(result, expected.as_slice());
     }
 }

@@ -2,7 +2,7 @@
 
 #![experimental]
 
-use std::io::{EndOfFile, InvalidInput, IoError, IoResult, standard_error};
+use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 
 use bytecode;
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -24,7 +24,9 @@ pub struct Assembly;
 
 impl Assembly {
     /// Create a new `Assembly`.
-    pub fn new() -> Assembly { Assembly }
+    pub fn new() -> Assembly {
+        Assembly
+    }
 }
 
 impl Compiler for Assembly {
@@ -32,42 +34,46 @@ impl Compiler for Assembly {
         loop {
             let ret = match input.read_line() {
                 Ok(line) => {
-                    let inst = line.replace("\n","");
+                    let inst = line.replace("\n", "");
                     let slice = inst.as_slice();
-                    if slice.len() == 0 { continue }
-                    if slice.char_at(0) == ';' { continue }
+                    if slice.len() == 0 {
+                        continue;
+                    }
+                    if slice.char_at(0) == ';' {
+                        continue;
+                    }
                     let (mnemonic, val) = match slice.find(' ') {
                         Some(n) => (slice.slice_to(n), slice.slice_from(n + 1)),
                         None => (slice, ""),
                     };
                     match mnemonic {
-                        "PUSH"     => output.write_push(try_number!(val)),
-                        "DUP"      => output.write_dup(),
-                        "COPY"     => output.write_copy(try_number!(val)),
-                        "SWAP"     => output.write_swap(),
-                        "DISCARD"  => output.write_discard(),
-                        "SLIDE"    => output.write_slide(try_number!(val)),
-                        "ADD"      => output.write_add(),
-                        "SUB"      => output.write_sub(),
-                        "MUL"      => output.write_mul(),
-                        "DIV"      => output.write_div(),
-                        "MOD"      => output.write_mod(),
-                        "STORE"    => output.write_store(),
+                        "PUSH" => output.write_push(try_number!(val)),
+                        "DUP" => output.write_dup(),
+                        "COPY" => output.write_copy(try_number!(val)),
+                        "SWAP" => output.write_swap(),
+                        "DISCARD" => output.write_discard(),
+                        "SLIDE" => output.write_slide(try_number!(val)),
+                        "ADD" => output.write_add(),
+                        "SUB" => output.write_sub(),
+                        "MUL" => output.write_mul(),
+                        "DIV" => output.write_div(),
+                        "MOD" => output.write_mod(),
+                        "STORE" => output.write_store(),
                         "RETRIEVE" => output.write_retrieve(),
-                        "MARK"     => output.write_mark(try_number!(val)),
-                        "CALL"     => output.write_call(try_number!(val)),
-                        "JUMP"     => output.write_jump(try_number!(val)),
-                        "JUMPZ"    => output.write_jumpz(try_number!(val)),
-                        "JUMPN"    => output.write_jumpn(try_number!(val)),
-                        "RETURN"   => output.write_return(),
-                        "EXIT"     => output.write_exit(),
-                        "PUTC"     => output.write_putc(),
-                        "PUTN"     => output.write_putn(),
-                        "GETC"     => output.write_getc(),
-                        "GETN"     => output.write_getn(),
-                        _          => Err(standard_error(InvalidInput)),
+                        "MARK" => output.write_mark(try_number!(val)),
+                        "CALL" => output.write_call(try_number!(val)),
+                        "JUMP" => output.write_jump(try_number!(val)),
+                        "JUMPZ" => output.write_jumpz(try_number!(val)),
+                        "JUMPN" => output.write_jumpn(try_number!(val)),
+                        "RETURN" => output.write_return(),
+                        "EXIT" => output.write_exit(),
+                        "PUTC" => output.write_putc(),
+                        "PUTN" => output.write_putn(),
+                        "GETC" => output.write_getc(),
+                        "GETN" => output.write_getn(),
+                        _ => Err(standard_error(InvalidInput)),
                     }
-                },
+                }
                 Err(e) => Err(e),
             };
 
@@ -82,35 +88,39 @@ impl Compiler for Assembly {
 }
 
 impl Decompiler for Assembly {
-    fn decompile<R: ByteCodeReader, W: Writer>(&self, input: &mut R, output: &mut W) -> IoResult<()> {
+    fn decompile<R: ByteCodeReader, W: Writer>(
+        &self,
+        input: &mut R,
+        output: &mut W,
+    ) -> IoResult<()> {
         loop {
             let res = match input.read_inst() {
-                Ok((bytecode::CMD_PUSH, n))     => write!(output, "PUSH {}\n", n),
-                Ok((bytecode::CMD_DUP, _))      => output.write_line("DUP"),
-                Ok((bytecode::CMD_COPY, n))     => write!(output, "COPY {}\n", n),
-                Ok((bytecode::CMD_SWAP, _))     => output.write_line("SWAP"),
-                Ok((bytecode::CMD_DISCARD, _))  => output.write_line("DISCARD"),
-                Ok((bytecode::CMD_SLIDE, n))    => write!(output, "SLIDE {}\n", n),
-                Ok((bytecode::CMD_ADD, _))      => output.write_line("ADD"),
-                Ok((bytecode::CMD_SUB, _))      => output.write_line("SUB"),
-                Ok((bytecode::CMD_MUL, _))      => output.write_line("MUL"),
-                Ok((bytecode::CMD_DIV, _))      => output.write_line("DIV"),
-                Ok((bytecode::CMD_MOD, _))      => output.write_line("MOD"),
-                Ok((bytecode::CMD_STORE, _))    => output.write_line("STORE"),
+                Ok((bytecode::CMD_PUSH, n)) => write!(output, "PUSH {}\n", n),
+                Ok((bytecode::CMD_DUP, _)) => output.write_line("DUP"),
+                Ok((bytecode::CMD_COPY, n)) => write!(output, "COPY {}\n", n),
+                Ok((bytecode::CMD_SWAP, _)) => output.write_line("SWAP"),
+                Ok((bytecode::CMD_DISCARD, _)) => output.write_line("DISCARD"),
+                Ok((bytecode::CMD_SLIDE, n)) => write!(output, "SLIDE {}\n", n),
+                Ok((bytecode::CMD_ADD, _)) => output.write_line("ADD"),
+                Ok((bytecode::CMD_SUB, _)) => output.write_line("SUB"),
+                Ok((bytecode::CMD_MUL, _)) => output.write_line("MUL"),
+                Ok((bytecode::CMD_DIV, _)) => output.write_line("DIV"),
+                Ok((bytecode::CMD_MOD, _)) => output.write_line("MOD"),
+                Ok((bytecode::CMD_STORE, _)) => output.write_line("STORE"),
                 Ok((bytecode::CMD_RETRIEVE, _)) => output.write_line("RETRIEVE"),
-                Ok((bytecode::CMD_MARK, n))     => write!(output, "MARK {}\n", n),
-                Ok((bytecode::CMD_CALL, n))     => write!(output, "CALL {}\n", n),
-                Ok((bytecode::CMD_JUMP, n))     => write!(output, "JUMP {}\n", n),
-                Ok((bytecode::CMD_JUMPZ, n))    => write!(output, "JUMPZ {}\n", n),
-                Ok((bytecode::CMD_JUMPN, n))    => write!(output, "JUMPN {}\n", n),
-                Ok((bytecode::CMD_RETURN, _))   => output.write_line("RETURN"),
-                Ok((bytecode::CMD_EXIT, _))     => output.write_line("EXIT"),
-                Ok((bytecode::CMD_PUTC, _))     => output.write_line("PUTC"),
-                Ok((bytecode::CMD_PUTN, _))     => output.write_line("PUTN"),
-                Ok((bytecode::CMD_GETC, _))     => output.write_line("GETC"),
-                Ok((bytecode::CMD_GETN, _))     => output.write_line("GETN"),
-                Ok(_)                           => Err(standard_error(InvalidInput)),
-                Err(e)                          => Err(e),
+                Ok((bytecode::CMD_MARK, n)) => write!(output, "MARK {}\n", n),
+                Ok((bytecode::CMD_CALL, n)) => write!(output, "CALL {}\n", n),
+                Ok((bytecode::CMD_JUMP, n)) => write!(output, "JUMP {}\n", n),
+                Ok((bytecode::CMD_JUMPZ, n)) => write!(output, "JUMPZ {}\n", n),
+                Ok((bytecode::CMD_JUMPN, n)) => write!(output, "JUMPN {}\n", n),
+                Ok((bytecode::CMD_RETURN, _)) => output.write_line("RETURN"),
+                Ok((bytecode::CMD_EXIT, _)) => output.write_line("EXIT"),
+                Ok((bytecode::CMD_PUTC, _)) => output.write_line("PUTC"),
+                Ok((bytecode::CMD_PUTN, _)) => output.write_line("PUTN"),
+                Ok((bytecode::CMD_GETC, _)) => output.write_line("GETC"),
+                Ok((bytecode::CMD_GETN, _)) => output.write_line("GETN"),
+                Ok(_) => Err(standard_error(InvalidInput)),
+                Err(e) => Err(e),
             };
             match res {
                 Err(ref e) if e.kind == EndOfFile => break,
@@ -133,32 +143,12 @@ mod test {
 
     #[test]
     fn test_assemble() {
-        let source = vec!(
-            "PUSH 1",
-            "DUP",
-            "COPY 2",
-            "SWAP",
-            "DISCARD",
-            "SLIDE 3",
-            "ADD",
-            "SUB",
-            "MUL",
-            "DIV",
-            "MOD",
-            "STORE",
-            "RETRIEVE",
-            "MARK 4",
-            "CALL 5",
-            "JUMP 6",
-            "JUMPZ 7",
-            "JUMPN 8",
-            "RETURN",
-            "EXIT",
-            "PUTC",
-            "PUTN",
-            "GETC",
-            "GETN",
-            ).connect("\n");
+        let source = vec![
+            "PUSH 1", "DUP", "COPY 2", "SWAP", "DISCARD", "SLIDE 3", "ADD", "SUB", "MUL", "DIV",
+            "MOD", "STORE", "RETRIEVE", "MARK 4", "CALL 5", "JUMP 6", "JUMPZ 7", "JUMPN 8",
+            "RETURN", "EXIT", "PUTC", "PUTN", "GETC", "GETN",
+        ]
+        .connect("\n");
         let mut writer = MemWriter::new();
         {
             let syntax = super::Assembly::new();
@@ -227,13 +217,12 @@ mod test {
             syntax.decompile(&mut bcr, &mut writer).unwrap();
         }
         let result = from_utf8(writer.get_ref()).unwrap();
-        let expected = vec!(
-            "PUSH 1", "DUP", "COPY 2", "SWAP", "DISCARD", "SLIDE 3",
-            "ADD", "SUB", "MUL", "DIV", "MOD",
-            "STORE", "RETRIEVE",
-            "MARK 1", "CALL 15", "JUMP 2", "JUMPZ 16", "JUMPN 32", "RETURN", "EXIT",
-            "PUTC", "PUTN", "GETC", "GETN", ""
-            ).connect("\n");
+        let expected = vec![
+            "PUSH 1", "DUP", "COPY 2", "SWAP", "DISCARD", "SLIDE 3", "ADD", "SUB", "MUL", "DIV",
+            "MOD", "STORE", "RETRIEVE", "MARK 1", "CALL 15", "JUMP 2", "JUMPZ 16", "JUMPN 32",
+            "RETURN", "EXIT", "PUTC", "PUTN", "GETC", "GETN", "",
+        ]
+        .connect("\n");
         assert_eq!(result, expected.as_slice());
     }
 }

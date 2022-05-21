@@ -3,8 +3,8 @@
 #![experimental]
 
 use std::collections::HashMap;
-use std::io::{EndOfFile, InvalidInput, IoResult, IoError, standard_error};
-use std::iter::{Counter, count};
+use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
+use std::iter::{count, Counter};
 
 use bytecode::ByteCodeWriter;
 use ir;
@@ -46,7 +46,7 @@ impl<I: Iterator<IoResult<Token>>> Instructions<I> {
                 let val = self.lcount.next().unwrap();
                 self.labels.insert(label, val);
                 val
-            },
+            }
         }
     }
 }
@@ -57,15 +57,15 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
             Some(i) => Some(i),
             None => {
                 let ret = match self.tokens.next() {
-                    Some(Ok(MoveRight)) => vec!(
+                    Some(Ok(MoveRight)) => vec![
                         Ok(ir::StackPush(BF_PTR_ADDR)),
                         Ok(ir::StackDuplicate),
                         Ok(ir::HeapRetrieve),
                         Ok(ir::StackPush(1)),
                         Ok(ir::Addition),
                         Ok(ir::HeapStore),
-                    ),
-                    Some(Ok(MoveLeft)) => vec!(
+                    ],
+                    Some(Ok(MoveLeft)) => vec![
                         Ok(ir::StackPush(BF_PTR_ADDR)),
                         Ok(ir::StackDuplicate),
                         Ok(ir::HeapRetrieve),
@@ -74,8 +74,8 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
                         Ok(ir::StackDuplicate),
                         Ok(ir::JumpIfNegative(BF_FAIL_MARKER)),
                         Ok(ir::HeapStore),
-                    ),
-                    Some(Ok(Increment)) => vec!(
+                    ],
+                    Some(Ok(Increment)) => vec![
                         Ok(ir::StackPush(BF_PTR_ADDR)),
                         Ok(ir::HeapRetrieve),
                         Ok(ir::StackDuplicate),
@@ -83,8 +83,8 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
                         Ok(ir::StackPush(1)),
                         Ok(ir::Addition),
                         Ok(ir::HeapStore),
-                    ),
-                    Some(Ok(Decrement)) => vec!(
+                    ],
+                    Some(Ok(Decrement)) => vec![
                         Ok(ir::StackPush(BF_PTR_ADDR)),
                         Ok(ir::HeapRetrieve),
                         Ok(ir::StackDuplicate),
@@ -92,50 +92,48 @@ impl<I: Iterator<IoResult<Token>>> Iterator<IoResult<Instruction>> for Instructi
                         Ok(ir::StackPush(1)),
                         Ok(ir::Subtraction),
                         Ok(ir::HeapStore),
-                    ),
-                    Some(Ok(Get)) => vec!(
+                    ],
+                    Some(Ok(Get)) => vec![
                         Ok(ir::StackPush(BF_PTR_ADDR)),
                         Ok(ir::HeapRetrieve),
                         Ok(ir::HeapRetrieve),
                         Ok(ir::GetCharactor),
-                    ),
-                    Some(Ok(Put)) => vec!(
+                    ],
+                    Some(Ok(Put)) => vec![
                         Ok(ir::StackPush(BF_PTR_ADDR)),
                         Ok(ir::HeapRetrieve),
                         Ok(ir::HeapRetrieve),
                         Ok(ir::PutCharactor),
-                    ),
+                    ],
                     Some(Ok(LoopStart)) => {
                         let l: i64 = self.scount.next().unwrap();
                         self.stack.push(l);
-                        vec!(
+                        vec![
                             Ok(ir::Mark(self.marker(format!("{}#", l)))),
                             Ok(ir::StackPush(BF_PTR_ADDR)),
                             Ok(ir::HeapRetrieve),
                             Ok(ir::HeapRetrieve),
                             Ok(ir::JumpIfZero(self.marker(format!("#{}", l)))),
-                        )
+                        ]
                     }
-                    Some(Ok(LoopEnd)) => {
-                        match self.stack.pop() {
-                            Some(l) => vec!(
-                                Ok(ir::Jump(self.marker(format!("{}#", l)))),
-                                Ok(ir::Mark(self.marker(format!("#{}", l)))),
-                            ),
-                            None => vec!(
-                                Err(IoError {
-                                    kind: InvalidInput,
-                                    desc: "syntax error",
-                                    detail: Some("broken loop".to_string()),
-                                })
-                            ),
-                        }
-                    }
-                    Some(Err(e)) => vec!(Err(e)),
+                    Some(Ok(LoopEnd)) => match self.stack.pop() {
+                        Some(l) => vec![
+                            Ok(ir::Jump(self.marker(format!("{}#", l)))),
+                            Ok(ir::Mark(self.marker(format!("#{}", l)))),
+                        ],
+                        None => vec![Err(IoError {
+                            kind: InvalidInput,
+                            desc: "syntax error",
+                            detail: Some("broken loop".to_string()),
+                        })],
+                    },
+                    Some(Err(e)) => vec![Err(e)],
                     None => {
-                        if self.parsed { return None }
+                        if self.parsed {
+                            return None;
+                        }
                         self.parsed = true;
-                        vec!(Ok(ir::Exit), Ok(ir::Mark(BF_FAIL_MARKER)))
+                        vec![Ok(ir::Exit), Ok(ir::Mark(BF_FAIL_MARKER))]
                     }
                 };
                 self.buffer.push_all(ret.as_slice());
@@ -163,13 +161,17 @@ struct Tokens<T> {
 }
 
 impl<I: Iterator<IoResult<char>>> Tokens<I> {
-    pub fn parse(self) -> Instructions<Tokens<I>> { Instructions::new(self) }
+    pub fn parse(self) -> Instructions<Tokens<I>> {
+        Instructions::new(self)
+    }
 }
 
 impl<I: Iterator<IoResult<char>>> Iterator<IoResult<Token>> for Tokens<I> {
     fn next(&mut self) -> Option<IoResult<Token>> {
         let c = self.lexemes.next();
-        if c.is_none() { return None; }
+        if c.is_none() {
+            return None;
+        }
 
         Some(match c.unwrap() {
             Ok('>') => Ok(MoveRight),
@@ -180,18 +182,20 @@ impl<I: Iterator<IoResult<char>>> Iterator<IoResult<Token>> for Tokens<I> {
             Ok('.') => Ok(Put),
             Ok('[') => Ok(LoopStart),
             Ok(']') => Ok(LoopEnd),
-            Ok(_)   => Err(standard_error(InvalidInput)),
-            Err(e)  => Err(e),
+            Ok(_) => Err(standard_error(InvalidInput)),
+            Err(e) => Err(e),
         })
     }
 }
 
 struct Scan<'r, T> {
-    buffer: &'r mut T
+    buffer: &'r mut T,
 }
 
 impl<'r, B: Buffer> Scan<'r, B> {
-    pub fn tokenize(self) -> Tokens<Scan<'r, B>> { Tokens { lexemes: self } }
+    pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
+        Tokens { lexemes: self }
+    }
 }
 
 impl<'r, B: Buffer> Iterator<IoResult<char>> for Scan<'r, B> {
@@ -206,8 +210,10 @@ impl<'r, B: Buffer> Iterator<IoResult<char>> for Scan<'r, B> {
                 Ok('.') => '.',
                 Ok('[') => '[',
                 Ok(']') => ']',
-                Ok(_)   => continue,
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+                Ok(_) => continue,
+                Err(IoError {
+                    kind: EndOfFile, ..
+                }) => return None,
                 Err(e) => return Some(Err(e)),
             };
             return Some(Ok(ret));
@@ -215,14 +221,18 @@ impl<'r, B: Buffer> Iterator<IoResult<char>> for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> { Scan { buffer: buffer } }
+fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
+    Scan { buffer: buffer }
+}
 
 /// Compiler for Brainfuck.
 pub struct Brainfuck;
 
 impl Brainfuck {
     /// Create a new `Brainfuck`.
-    pub fn new() -> Brainfuck { Brainfuck }
+    pub fn new() -> Brainfuck {
+        Brainfuck
+    }
 }
 
 impl Compiler for Brainfuck {
@@ -234,8 +244,9 @@ impl Compiler for Brainfuck {
 
 #[cfg(test)]
 mod test {
-    use ir::*;
     use std::io::BufReader;
+
+    use ir::*;
 
     #[test]
     fn test_scan() {

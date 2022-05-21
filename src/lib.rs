@@ -7,6 +7,7 @@ parsers and generators, and assembly language.
 extern crate whitebase;
 
 use std::io::{BufReader, MemReader, MemWriter};
+
 use whitebase::machine;
 use whitebase::syntax::{Compiler, Whitespace};
 
@@ -24,19 +25,20 @@ fn main() {
                 Err(e) => fail!("{}", e),
                 _ => (),
             }
-        },
+        }
     }
 }
 ```
 */
 
-#![crate_name="whitebase"]
-#![crate_type="rlib"]
+#![crate_name = "whitebase"]
+#![crate_type = "rlib"]
 #![warn(missing_doc)]
 #![feature(phase, globs, macro_rules)]
 #![experimental]
 
-#[phase(plugin, link)] extern crate log;
+#[phase(plugin, link)]
+extern crate log;
 
 pub static VERSION_MAJOR: uint = 0;
 pub static VERSION_MINOR: uint = 1;
@@ -45,9 +47,13 @@ pub static PRE_RELEASE: bool = true;
 
 /// Build version string.
 pub fn version() -> String {
-    format!("{}.{}.{}{}",
-            VERSION_MAJOR, VERSION_MINOR, VERSION_TINY,
-            if PRE_RELEASE { "-pre" } else { "" })
+    format!(
+        "{}.{}.{}{}",
+        VERSION_MAJOR,
+        VERSION_MINOR,
+        VERSION_TINY,
+        if PRE_RELEASE { "-pre" } else { "" }
+    )
 }
 
 pub mod bytecode;

@@ -2,10 +2,10 @@
 
 #![experimental]
 
-use std::collections::HashMap;
-use std::collections::TreeMap;
-use std::io::{BufferedReader, EndOfFile, InvalidInput, IoError, SeekSet, standard_error};
-use std::io::stdio::{StdReader, StdWriter, stdin, stdout_raw};
+use std::collections::{HashMap, TreeMap};
+use std::io::stdio::{stdin, stdout_raw, StdReader, StdWriter};
+use std::io::{standard_error, BufferedReader, EndOfFile, InvalidInput, IoError, SeekSet};
+
 use bytecode;
 use bytecode::ByteCodeReader;
 
@@ -57,45 +57,145 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
     /// Run program.
     pub fn run(&mut self, program: &mut ByteCodeReader) -> MachineResult<()> {
         let mut index = HashMap::new();
-        let mut caller = vec!();
+        let mut caller = vec![];
         loop {
             match self.step(program, &mut index, &mut caller) {
-                Err(e)    => return Err(e),
+                Err(e) => return Err(e),
                 Ok(false) => return Ok(()),
-                Ok(true)  => continue,
+                Ok(true) => continue,
             }
         }
     }
 
-    fn step(&mut self, program: &mut ByteCodeReader, index: &mut HashMap<i64, u64>, caller: &mut Vec<u64>) -> MachineResult<bool> {
+    fn step(
+        &mut self,
+        program: &mut ByteCodeReader,
+        index: &mut HashMap<i64, u64>,
+        caller: &mut Vec<u64>,
+    ) -> MachineResult<bool> {
         match program.read_inst() {
-            Ok((bytecode::CMD_PUSH, n))       => { debug!("PUSH {}", n); try!(self.push(n)); Ok(true) },
-            Ok((bytecode::CMD_DUP, _))        => { debug!("DUP"); try!(self.copy(0)); Ok(true) },
-            Ok((bytecode::CMD_COPY, n))       => { debug!("COPY {}", n); try!(self.copy(n.to_uint().unwrap())); Ok(true) },
-            Ok((bytecode::CMD_SWAP, _))       => { debug!("SWAP"); try!(self.swap()); Ok(true) },
-            Ok((bytecode::CMD_DISCARD, _))    => { debug!("SWAP"); try!(self.discard()); Ok(true) },
-            Ok((bytecode::CMD_SLIDE, n))      => { debug!("SLIDE {}", n); try!(self.slide(n.to_uint().unwrap())); Ok(true) },
-            Ok((bytecode::CMD_ADD, _))        => { debug!("ADD"); try!(self.calc(|x, y| { y + x })); Ok(true) },
-            Ok((bytecode::CMD_SUB, _))        => { debug!("SUB"); try!(self.calc(|x, y| { y - x })); Ok(true) },
-            Ok((bytecode::CMD_MUL, _))        => { debug!("MUL"); try!(self.calc(|x, y| { y * x })); Ok(true) },
-            Ok((bytecode::CMD_DIV, _))        => { debug!("DIV"); try!(self.dcalc(|x, y| { y / x })); Ok(true) },
-            Ok((bytecode::CMD_MOD, _))        => { debug!("MOD"); try!(self.dcalc(|x, y| { y % x })); Ok(true) },
-            Ok((bytecode::CMD_STORE, _))      => { debug!("STORE"); try!(self.store()); Ok(true) },
-            Ok((bytecode::CMD_RETRIEVE, _))   => { debug!("RETREIVE"); try!(self.retrieve()); Ok(true) },
-            Ok((bytecode::CMD_MARK, n))       => { debug!("MARK {}", n); try!(self.mark(program, index, n)); Ok(true) },
-            Ok((bytecode::CMD_CALL, n))       => { debug!("CALL {}", n); try!(self.call(program, index, caller, &n)); Ok(true) },
-            Ok((bytecode::CMD_JUMP, n))       => { debug!("JUMP {}", n); try!(self.jump(program, index, &n)); Ok(true) },
-            Ok((bytecode::CMD_JUMPZ, n))      => { debug!("JUMPZ {}", n); try!(self.jump_if(program, index, &n, |x| { x == 0 })); Ok(true) },
-            Ok((bytecode::CMD_JUMPN, n))      => { debug!("JUMPN {}", n); try!(self.jump_if(program, index, &n, |x| { x < 0 })); Ok(true) },
-            Ok((bytecode::CMD_RETURN, _))     => { debug!("RETURN"); try!(self.do_return(program, caller)); Ok(true) },
-            Ok((bytecode::CMD_EXIT, _))       => { debug!("EXIT ({}, {})", self.stack, self.heap); Ok(false) },
-            Ok((bytecode::CMD_PUTC, _))       => { debug!("PUTC"); try!(self.put_char()); Ok(true) },
-            Ok((bytecode::CMD_PUTN, _))       => { debug!("PUTN"); try!(self.put_num()); Ok(true) },
-            Ok((bytecode::CMD_GETC, _))       => { debug!("GETC"); try!(self.get_char()); Ok(true) },
-            Ok((bytecode::CMD_GETN, _))       => { debug!("GETN"); try!(self.get_num()); Ok(true) },
+            Ok((bytecode::CMD_PUSH, n)) => {
+                debug!("PUSH {}", n);
+                try!(self.push(n));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_DUP, _)) => {
+                debug!("DUP");
+                try!(self.copy(0));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_COPY, n)) => {
+                debug!("COPY {}", n);
+                try!(self.copy(n.to_uint().unwrap()));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_SWAP, _)) => {
+                debug!("SWAP");
+                try!(self.swap());
+                Ok(true)
+            }
+            Ok((bytecode::CMD_DISCARD, _)) => {
+                debug!("SWAP");
+                try!(self.discard());
+                Ok(true)
+            }
+            Ok((bytecode::CMD_SLIDE, n)) => {
+                debug!("SLIDE {}", n);
+                try!(self.slide(n.to_uint().unwrap()));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_ADD, _)) => {
+                debug!("ADD");
+                try!(self.calc(|x, y| { y + x }));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_SUB, _)) => {
+                debug!("SUB");
+                try!(self.calc(|x, y| { y - x }));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_MUL, _)) => {
+                debug!("MUL");
+                try!(self.calc(|x, y| { y * x }));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_DIV, _)) => {
+                debug!("DIV");
+                try!(self.dcalc(|x, y| { y / x }));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_MOD, _)) => {
+                debug!("MOD");
+                try!(self.dcalc(|x, y| { y % x }));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_STORE, _)) => {
+                debug!("STORE");
+                try!(self.store());
+                Ok(true)
+            }
+            Ok((bytecode::CMD_RETRIEVE, _)) => {
+                debug!("RETREIVE");
+                try!(self.retrieve());
+                Ok(true)
+            }
+            Ok((bytecode::CMD_MARK, n)) => {
+                debug!("MARK {}", n);
+                try!(self.mark(program, index, n));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_CALL, n)) => {
+                debug!("CALL {}", n);
+                try!(self.call(program, index, caller, &n));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_JUMP, n)) => {
+                debug!("JUMP {}", n);
+                try!(self.jump(program, index, &n));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_JUMPZ, n)) => {
+                debug!("JUMPZ {}", n);
+                try!(self.jump_if(program, index, &n, |x| { x == 0 }));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_JUMPN, n)) => {
+                debug!("JUMPN {}", n);
+                try!(self.jump_if(program, index, &n, |x| { x < 0 }));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_RETURN, _)) => {
+                debug!("RETURN");
+                try!(self.do_return(program, caller));
+                Ok(true)
+            }
+            Ok((bytecode::CMD_EXIT, _)) => {
+                debug!("EXIT ({}, {})", self.stack, self.heap);
+                Ok(false)
+            }
+            Ok((bytecode::CMD_PUTC, _)) => {
+                debug!("PUTC");
+                try!(self.put_char());
+                Ok(true)
+            }
+            Ok((bytecode::CMD_PUTN, _)) => {
+                debug!("PUTN");
+                try!(self.put_num());
+                Ok(true)
+            }
+            Ok((bytecode::CMD_GETC, _)) => {
+                debug!("GETC");
+                try!(self.get_char());
+                Ok(true)
+            }
+            Ok((bytecode::CMD_GETN, _)) => {
+                debug!("GETN");
+                try!(self.get_num());
+                Ok(true)
+            }
             Err(ref e) if e.kind == EndOfFile => Err(MissingExitInstruction),
-            Err(e)                            => Err(MachineIoError(e)),
-            _                                 => Err(OtherMachineError),
+            Err(e) => Err(MachineIoError(e)),
+            _ => Err(OtherMachineError),
         }
     }
 
@@ -106,10 +206,10 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
 
     fn copy(&mut self, n: uint) -> MachineResult<()> {
         if self.stack.len() <= n {
-            return Err(IllegalStackManipulation)
+            return Err(IllegalStackManipulation);
         }
         let mut i = 0;
-        let mut tmp = vec!();
+        let mut tmp = vec![];
         while i < n {
             tmp.insert(0, self.stack.pop().unwrap());
             i += 1;
@@ -130,7 +230,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
                     self.stack.push(x);
                     self.stack.push(y);
                     Ok(())
-                },
+                }
             },
         }
     }
@@ -163,7 +263,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
                 Some(y) => {
                     self.stack.push(f(x, y));
                     Ok(())
-                },
+                }
                 None => Err(IllegalStackManipulation),
             },
             None => Err(IllegalStackManipulation),
@@ -177,7 +277,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
                 Some(y) => {
                     self.stack.push(divf(x, y));
                     Ok(())
-                },
+                }
                 None => Err(IllegalStackManipulation),
             },
             None => Err(IllegalStackManipulation),
@@ -190,7 +290,7 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
                 Some(addr) => {
                     self.heap.insert(addr, val);
                     Ok(())
-                },
+                }
                 None => Err(IllegalStackManipulation),
             },
             None => Err(IllegalStackManipulation),
@@ -205,59 +305,79 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
                     None => 0,
                 });
                 Ok(())
-            },
+            }
             None => Err(IllegalStackManipulation),
         }
     }
 
-    fn mark(&mut self, program: &mut ByteCodeReader, index: &mut HashMap<i64, u64>, label: i64) -> MachineResult<()> {
+    fn mark(
+        &mut self,
+        program: &mut ByteCodeReader,
+        index: &mut HashMap<i64, u64>,
+        label: i64,
+    ) -> MachineResult<()> {
         match program.tell() {
             Ok(pos) => {
                 index.insert(label, pos);
                 Ok(())
-            },
+            }
             Err(err) => return Err(MachineIoError(err)),
         }
     }
 
-    fn call(&mut self, program: &mut ByteCodeReader, index: &mut HashMap<i64, u64>, caller: &mut Vec<u64>, label: &i64) -> MachineResult<()> {
+    fn call(
+        &mut self,
+        program: &mut ByteCodeReader,
+        index: &mut HashMap<i64, u64>,
+        caller: &mut Vec<u64>,
+        label: &i64,
+    ) -> MachineResult<()> {
         match program.tell() {
             Ok(pos) => {
                 caller.push(pos);
                 self.jump(program, index, label)
-            },
+            }
             Err(err) => Err(MachineIoError(err)),
         }
     }
 
-    fn jump(&mut self, program: &mut ByteCodeReader, index: &mut HashMap<i64, u64>, label: &i64) -> MachineResult<()> {
+    fn jump(
+        &mut self,
+        program: &mut ByteCodeReader,
+        index: &mut HashMap<i64, u64>,
+        label: &i64,
+    ) -> MachineResult<()> {
         match index.find_copy(label) {
             Some(pos) => match program.seek(pos.to_i64().unwrap(), SeekSet) {
                 Ok(_) => Ok(()),
                 Err(err) => Err(MachineIoError(err)),
             },
-            None => {
-                loop {
-                    match program.read_inst() {
-                        Ok((opcode, operand)) if opcode == bytecode::CMD_MARK => {
-                            match program.tell() {
-                                Ok(pos) => {
-                                    index.insert(operand, pos);
-                                    if operand == *label { return Ok(()) }
-                                },
-                                Err(err) => return Err(MachineIoError(err)),
+            None => loop {
+                match program.read_inst() {
+                    Ok((opcode, operand)) if opcode == bytecode::CMD_MARK => match program.tell() {
+                        Ok(pos) => {
+                            index.insert(operand, pos);
+                            if operand == *label {
+                                return Ok(());
                             }
-                        },
-                        Err(ref e) if e.kind == EndOfFile => return Err(UndefinedLabel),
+                        }
                         Err(err) => return Err(MachineIoError(err)),
-                        _ => continue,
-                    }
+                    },
+                    Err(ref e) if e.kind == EndOfFile => return Err(UndefinedLabel),
+                    Err(err) => return Err(MachineIoError(err)),
+                    _ => continue,
                 }
             },
         }
     }
 
-    fn jump_if(&mut self, program: &mut ByteCodeReader, index: &mut HashMap<i64, u64>, label: &i64, test: impl FnOnce(i64) -> bool) -> MachineResult<()> {
+    fn jump_if(
+        &mut self,
+        program: &mut ByteCodeReader,
+        index: &mut HashMap<i64, u64>,
+        label: &i64,
+        test: impl FnOnce(i64) -> bool,
+    ) -> MachineResult<()> {
         match self.stack.pop() {
             Some(x) if test(x) => self.jump(program, index, label),
             None => Err(IllegalStackManipulation),
@@ -265,7 +385,11 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
         }
     }
 
-    fn do_return(&mut self, program: &mut ByteCodeReader, caller: &mut Vec<u64>) -> MachineResult<()> {
+    fn do_return(
+        &mut self,
+        program: &mut ByteCodeReader,
+        caller: &mut Vec<u64>,
+    ) -> MachineResult<()> {
         match caller.pop() {
             Some(to_return) => match program.seek(to_return.to_i64().unwrap(), SeekSet) {
                 Ok(_) => Ok(()),
@@ -277,11 +401,9 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
 
     fn put_char(&mut self) -> MachineResult<()> {
         match self.stack.pop() {
-            Some(n) if n >= 0 => {
-                match write!(self.stdout, "{}", n.to_u8().unwrap() as char) {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(MachineIoError(e)),
-                }
+            Some(n) if n >= 0 => match write!(self.stdout, "{}", n.to_u8().unwrap() as char) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(MachineIoError(e)),
             },
             Some(_) => Err(IllegalStackManipulation),
             None => Err(IllegalStackManipulation),
@@ -290,11 +412,9 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
 
     fn put_num(&mut self) -> MachineResult<()> {
         match self.stack.pop() {
-            Some(n) => {
-                match write!(self.stdout, "{}", n) {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(MachineIoError(e)),
-                }
+            Some(n) => match write!(self.stdout, "{}", n) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(MachineIoError(e)),
             },
             None => Err(IllegalStackManipulation),
         }
@@ -306,19 +426,19 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
                 self.stack.push(c as i64);
                 try!(self.store());
                 Ok(())
-            },
+            }
             Err(err) => Err(MachineIoError(err)),
         }
     }
 
     fn get_num(&mut self) -> MachineResult<()> {
         match self.stdin.read_line() {
-            Ok(line) => match from_str(line.replace("\n","").as_slice()) {
+            Ok(line) => match from_str(line.replace("\n", "").as_slice()) {
                 Some(n) => {
                     self.stack.push(n);
                     try!(self.store());
                     Ok(())
-                },
+                }
                 None => Err(MachineIoError(standard_error(InvalidInput))),
             },
             Err(err) => Err(MachineIoError(err)),
@@ -329,8 +449,9 @@ impl<B: Buffer, W: Writer> Machine<B, W> {
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
-    use std::io::{BufWriter, MemReader, MemWriter};
     use std::io::util::{NullReader, NullWriter};
+    use std::io::{BufWriter, MemReader, MemWriter};
+
     use bytecode::ByteCodeWriter;
 
     #[test]
@@ -345,7 +466,7 @@ mod test {
 
         let mut bcr = MemReader::new(bcw.unwrap());
         let mut vm = super::Machine::new(NullReader, NullWriter);
-        let mut caller = vec!();
+        let mut caller = vec![];
         let mut index = HashMap::new();
         vm.step(&mut bcr, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1));
@@ -373,7 +494,7 @@ mod test {
 
         let mut bcr = MemReader::new(bcw.unwrap());
         let mut vm = super::Machine::new(NullReader, NullWriter);
-        let mut caller = vec!();
+        let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([2, 19, 2, 5, 1, 1]);
         vm.step(&mut bcr, &mut index, &mut caller).unwrap();
@@ -397,7 +518,7 @@ mod test {
 
         let mut bcr = MemReader::new(bcw.unwrap());
         let mut vm = super::Machine::new(NullReader, NullWriter);
-        let mut caller = vec!();
+        let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([1, 1, 2]);
         vm.step(&mut bcr, &mut index, &mut caller).unwrap();
@@ -424,7 +545,7 @@ mod test {
 
         let mut bcr = MemReader::new(bcw.unwrap());
         let mut vm = super::Machine::new(NullReader, NullWriter);
-        let mut caller = vec!();
+        let mut caller = vec![];
         let mut index = HashMap::new();
         vm.stack.push_all([-1, 0]);
         vm.step(&mut bcr, &mut index, &mut caller).unwrap();
@@ -444,7 +565,7 @@ mod test {
     #[test]
     fn test_io() {
         let mut heap = [0, 0];
-        let mut buf  = [0, ..2];
+        let mut buf = [0, ..2];
         {
             let mut bcw = MemWriter::new();
             bcw.write_getc().unwrap();
@@ -452,10 +573,10 @@ mod test {
             bcw.write_putc().unwrap();
             bcw.write_putn().unwrap();
             let mut bcr = MemReader::new(bcw.unwrap());
-            let input = MemReader::new(vec!(87, 49, 50, 51, 10));
+            let input = MemReader::new(vec![87, 49, 50, 51, 10]);
             let output = BufWriter::new(buf);
             let mut vm = super::Machine::new(input, output);
-            let mut caller = vec!();
+            let mut caller = vec![];
             let mut index = HashMap::new();
             vm.stack.push_all([5, 66, 2, 1]);
             vm.step(&mut bcr, &mut index, &mut caller).unwrap();
@@ -470,6 +591,4 @@ mod test {
         assert!(heap == [87, 123]);
         assert!(buf == [66, 53]);
     }
-
-
 }

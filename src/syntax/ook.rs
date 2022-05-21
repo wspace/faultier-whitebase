@@ -2,30 +2,36 @@
 
 #![experimental]
 
-use std::io::{EndOfFile, InvalidInput, IoError, IoResult, standard_error};
+use std::io::{standard_error, EndOfFile, InvalidInput, IoError, IoResult};
 use std::str::from_utf8;
 
 use bytecode::ByteCodeWriter;
+use syntax::brainfuck::{
+    Decrement, Get, Increment, Instructions, LoopEnd, LoopStart, MoveLeft, MoveRight, Put, Token,
+};
 use syntax::Compiler;
-use syntax::brainfuck::{Instructions, Token, MoveRight, MoveLeft, Increment, Decrement, Put, Get, LoopStart, LoopEnd};
 
 struct Tokens<T> {
     lexemes: T,
 }
 
 impl<I: Iterator<IoResult<String>>> Tokens<I> {
-    pub fn parse(self) -> Instructions<Tokens<I>> { Instructions::new(self) }
+    pub fn parse(self) -> Instructions<Tokens<I>> {
+        Instructions::new(self)
+    }
 }
 
 impl<I: Iterator<IoResult<String>>> Iterator<IoResult<Token>> for Tokens<I> {
     fn next(&mut self) -> Option<IoResult<Token>> {
         let op = self.lexemes.next();
-        if op.is_none() { return None; }
+        if op.is_none() {
+            return None;
+        }
 
         let res = op.unwrap();
-         match res {
-             Err(e) => return Some(Err(e)),
-             Ok(_) => (),
+        match res {
+            Err(e) => return Some(Err(e)),
+            Ok(_) => (),
         }
 
         Some(match res.unwrap().as_slice() {
@@ -56,7 +62,9 @@ struct Scan<'r, T> {
 }
 
 impl<'r, B: Buffer> Scan<'r, B> {
-    pub fn tokenize(self) -> Tokens<Scan<'r, B>> { Tokens { lexemes: self } }
+    pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
+        Tokens { lexemes: self }
+    }
 }
 
 impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
@@ -68,7 +76,9 @@ impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
             match self.buffer.read_char() {
                 Ok(ref c) if is_whitespace(c) => (),
                 Ok(_) => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+                Err(IoError {
+                    kind: EndOfFile, ..
+                }) => return None,
                 Err(e) => return Some(Err(e)),
             }
             // skip linebreak
@@ -78,22 +88,28 @@ impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
                     Ok(c) => {
                         buf[0] = c as u8;
                         break;
-                    },
-                    Err(IoError { kind: EndOfFile, ..}) => return None,
+                    }
+                    Err(IoError {
+                        kind: EndOfFile, ..
+                    }) => return None,
                     Err(e) => return Some(Err(e)),
                 }
             }
             match self.buffer.read(buf.mut_slice_from(1)) {
                 Ok(n) if n == 8 => (),
-                Ok(_)  => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+                Ok(_) => return Some(Err(standard_error(InvalidInput))),
+                Err(IoError {
+                    kind: EndOfFile, ..
+                }) => return None,
                 Err(e) => return Some(Err(e)),
             }
         } else {
             match self.buffer.read(buf) {
                 Ok(n) if n == 9 => (),
                 Ok(_) => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+                Err(IoError {
+                    kind: EndOfFile, ..
+                }) => return None,
                 Err(e) => return Some(Err(e)),
             }
             self.is_start = false;
@@ -107,7 +123,10 @@ impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
 }
 
 fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
-    Scan { buffer: buffer, is_start: true }
+    Scan {
+        buffer: buffer,
+        is_start: true,
+    }
 }
 
 /// Compiler for Ook!.
@@ -115,7 +134,9 @@ pub struct Ook;
 
 impl Ook {
     /// Create a new `Ook`.
-    pub fn new() -> Ook { Ook }
+    pub fn new() -> Ook {
+        Ook
+    }
 }
 
 impl Compiler for Ook {
@@ -128,7 +149,10 @@ impl Compiler for Ook {
 #[cfg(test)]
 mod test {
     use std::io::BufReader;
-    use syntax::brainfuck::{MoveRight, MoveLeft, Increment, Decrement, Put, Get, LoopStart, LoopEnd};
+
+    use syntax::brainfuck::{
+        Decrement, Get, Increment, LoopEnd, LoopStart, MoveLeft, MoveRight, Put,
+    };
 
     #[test]
     fn test_scan() {
@@ -142,7 +166,7 @@ mod test {
 
     #[test]
     fn test_tokenize() {
-        let source = vec!(
+        let source = vec![
             "Ook. Ook?",
             "Ook? Ook.",
             "Ook. Ook.",
@@ -151,7 +175,8 @@ mod test {
             "Ook! Ook.",
             "Ook! Ook?",
             "Ook? Ook!",
-            ).connect(" ");
+        ]
+        .connect(" ");
         let mut buffer = BufReader::new(source.as_slice().as_bytes());
         let mut it = super::scan(&mut buffer).tokenize();
         assert_eq!(it.next(), Some(Ok(MoveRight)));
