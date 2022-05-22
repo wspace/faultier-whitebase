@@ -131,108 +131,109 @@ impl<W: Write> ByteCodeWriter for W {
     }
 
     fn write_push(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_PUSH)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_PUSH, n)
     }
 
     fn write_dup(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_DUP)
+        write_cmd(self, CMD_DUP)
     }
 
     fn write_copy(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_COPY)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_COPY, n)
     }
 
     fn write_swap(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_SWAP)
+        write_cmd(self, CMD_SWAP)
     }
 
     fn write_discard(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_DISCARD)
+        write_cmd(self, CMD_DISCARD)
     }
 
     fn write_slide(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_SLIDE)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_SLIDE, n)
     }
 
     fn write_add(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_ADD)
+        write_cmd(self, CMD_ADD)
     }
 
     fn write_sub(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_SUB)
+        write_cmd(self, CMD_SUB)
     }
 
     fn write_mul(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_MUL)
+        write_cmd(self, CMD_MUL)
     }
 
     fn write_div(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_DIV)
+        write_cmd(self, CMD_DIV)
     }
 
     fn write_mod(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_MOD)
+        write_cmd(self, CMD_MOD)
     }
 
     fn write_store(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_STORE)
+        write_cmd(self, CMD_STORE)
     }
 
     fn write_retrieve(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_RETRIEVE)
+        write_cmd(self, CMD_RETRIEVE)
     }
 
     fn write_mark(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_MARK)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_MARK, n)
     }
 
     fn write_call(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_CALL)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_CALL, n)
     }
 
     fn write_jump(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_JUMP)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_JUMP, n)
     }
 
     fn write_jumpz(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_JUMPZ)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_JUMPZ, n)
     }
 
     fn write_jumpn(&mut self, n: i64) -> io::Result<()> {
-        self.write_u8(CMD_JUMPN)?;
-        self.write_be_i64(n)
+        write_cmd_arg(self, CMD_JUMPN, n)
     }
 
     fn write_return(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_RETURN)
+        write_cmd(self, CMD_RETURN)
     }
 
     fn write_exit(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_EXIT)
+        write_cmd(self, CMD_EXIT)
     }
 
     fn write_putn(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_PUTN)
+        write_cmd(self, CMD_PUTN)
     }
 
     fn write_putc(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_PUTC)
+        write_cmd(self, CMD_PUTC)
     }
 
     fn write_getc(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_GETC)
+        write_cmd(self, CMD_GETC)
     }
 
     fn write_getn(&mut self) -> io::Result<()> {
-        self.write_u8(CMD_GETN)
+        write_cmd(self, CMD_GETN)
     }
+}
+
+fn write_cmd<W: Write>(w: &mut W, cmd: u8) -> io::Result<()> {
+    w.write_all(&[cmd])
+}
+
+fn write_cmd_arg<W: Write>(w: &mut W, cmd: u8, arg: i64) -> io::Result<()> {
+    w.write_all(&[cmd])?;
+    w.write_all(&arg.to_be_bytes())
 }
 
 /// An iterator that convert to IR from bytes on each iteration, `read_inst()` encounters `EndOfFile`.
@@ -301,22 +302,24 @@ pub trait ByteCodeReader: Read + Seek {
 
 impl<R: Read + Seek> ByteCodeReader for R {
     fn read_inst(&mut self) -> io::Result<(u8, i64)> {
-        match self.read_u8() {
-            Ok(n)
-                if n == CMD_PUSH
-                    || n == CMD_COPY
-                    || n == CMD_SLIDE
-                    || n == CMD_MARK
-                    || n == CMD_CALL
-                    || n == CMD_JUMP
-                    || n == CMD_JUMPZ
-                    || n == CMD_JUMPN =>
-            {
-                Ok((n, self.read_be_i64()?))
-            }
-            Ok(n) => Ok((n, 0)),
-            Err(e) => Err(e),
+        let mut buf = [0; 8];
+        match self.read(&mut buf[..1]) {
+            Ok(0) => return Err(ErrorKind::UnexpectedEof.into()),
+            Err(e) => return Err(e),
+            _ => {}
         }
+        let n = buf[0];
+        let arg = match n {
+            CMD_PUSH | CMD_COPY | CMD_SLIDE | CMD_MARK | CMD_CALL | CMD_JUMP | CMD_JUMPZ
+            | CMD_JUMPN => {
+                if let Err(e) = self.read_exact(&mut buf) {
+                    return Err(e);
+                }
+                i64::from_be_bytes(buf)
+            }
+            _ => 0,
+        };
+        Ok((n, arg))
     }
 }
 
