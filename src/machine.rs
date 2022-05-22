@@ -211,106 +211,65 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         if self.stack.len() <= n {
             return Err(IllegalStackManipulation);
         }
-        let mut i = 0;
-        let mut tmp = vec![];
-        while i < n {
-            tmp.insert(0, self.stack.pop().unwrap());
-            i += 1;
-        }
-        let val = self.stack.pop().unwrap();
-        self.stack.push(val);
-        self.stack.extend_from_slice(&tmp);
-        self.stack.push(val);
+        self.stack.push(self.stack[self.stack.len() - n - 1]);
         Ok(())
     }
 
     fn swap(&mut self) -> MachineResult<()> {
-        match self.stack.pop() {
-            None => Err(IllegalStackManipulation),
-            Some(x) => match self.stack.pop() {
-                None => Err(IllegalStackManipulation),
-                Some(y) => {
-                    self.stack.push(x);
-                    self.stack.push(y);
-                    Ok(())
-                }
-            },
+        let len = self.stack.len();
+        if len < 2 {
+            return Err(IllegalStackManipulation);
         }
+        self.stack.swap(len - 2, len - 1);
+        Ok(())
     }
 
     fn discard(&mut self) -> MachineResult<()> {
-        match self.stack.pop() {
-            Some(_) => Ok(()),
-            None => Err(IllegalStackManipulation),
-        }
+        self.stack.pop().ok_or(IllegalStackManipulation)?;
+        Ok(())
     }
 
     fn slide(&mut self, n: usize) -> MachineResult<()> {
         if self.stack.len() < n {
-            Err(IllegalStackManipulation)
-        } else {
-            let top = self.stack.pop().unwrap();
-            let mut i = 0;
-            while i < n {
-                self.stack.pop();
-                i += 1;
-            }
-            self.stack.push(top);
-            Ok(())
+            return Err(IllegalStackManipulation);
         }
+        let top = self.stack.pop().unwrap();
+        self.stack.truncate(self.stack.len() - n);
+        self.stack.push(top);
+        Ok(())
     }
 
     fn calc(&mut self, f: impl FnOnce(i64, i64) -> i64) -> MachineResult<()> {
-        match self.stack.pop() {
-            Some(x) => match self.stack.pop() {
-                Some(y) => {
-                    self.stack.push(f(x, y));
-                    Ok(())
-                }
-                None => Err(IllegalStackManipulation),
-            },
-            None => Err(IllegalStackManipulation),
-        }
+        let x = self.stack.pop().ok_or(IllegalStackManipulation)?;
+        let y = self.stack.last_mut().ok_or(IllegalStackManipulation)?;
+        *y = f(x, *y);
+        Ok(())
     }
 
     fn dcalc(&mut self, divf: impl FnOnce(i64, i64) -> i64) -> MachineResult<()> {
-        match self.stack.pop() {
-            Some(0) => Err(ZeroDivision),
-            Some(x) => match self.stack.pop() {
-                Some(y) => {
-                    self.stack.push(divf(x, y));
-                    Ok(())
-                }
-                None => Err(IllegalStackManipulation),
-            },
-            None => Err(IllegalStackManipulation),
+        let x = self.stack.pop().ok_or(IllegalStackManipulation)?;
+        if x == 0 {
+            return Err(ZeroDivision);
         }
+        let y = self.stack.last_mut().ok_or(IllegalStackManipulation)?;
+        *y = divf(x, *y);
+        Ok(())
     }
 
     fn store(&mut self) -> MachineResult<()> {
-        match self.stack.pop() {
-            Some(val) => match self.stack.pop() {
-                Some(addr) => {
-                    self.heap.insert(addr, val);
-                    Ok(())
-                }
-                None => Err(IllegalStackManipulation),
-            },
-            None => Err(IllegalStackManipulation),
-        }
+        let val = self.stack.pop().ok_or(IllegalStackManipulation)?;
+        let addr = self.stack.pop().ok_or(IllegalStackManipulation)?;
+        self.heap.insert(addr, val);
+        Ok(())
     }
 
     fn retrieve(&mut self) -> MachineResult<()> {
-        match self.stack.pop() {
-            Some(addr) => {
-                self.stack.push(match self.heap.get(&addr) {
-                    Some(val) => *val,
-                    None => 0,
-                });
-                Ok(())
-            }
-            None => Err(IllegalStackManipulation),
-        }
+        let addr = self.stack.pop().ok_or(IllegalStackManipulation)?;
+        self.stack.push(match self.heap.get(&addr) {
+            Some(val) => *val,
+            None => 0,
+        });
+        Ok(())
     }
 
     fn mark<R: ByteCodeReader>(
