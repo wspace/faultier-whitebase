@@ -1,6 +1,6 @@
 //! Assembler and Disassembler.
 
-use std::io::{self, BufRead, EndOfFile, ErrorKind, Write};
+use std::io::{self, BufRead, ErrorKind, Write};
 
 use bytecode;
 use bytecode::{ByteCodeReader, ByteCodeWriter};
@@ -32,8 +32,8 @@ impl Compiler for Assembly {
         input: &mut B,
         output: &mut W,
     ) -> io::Result<()> {
-        loop {
-            let ret = match input.read_line() {
+        while let Some(line) = input.read_line() {
+            match line {
                 Ok(line) => {
                     let inst = line.replace("\n", "");
                     if inst.len() == 0 {
@@ -75,13 +75,7 @@ impl Compiler for Assembly {
                     }
                 }
                 Err(e) => Err(e),
-            };
-
-            match ret {
-                Ok(()) => continue,
-                Err(ref e) if e.kind == EndOfFile => break,
-                Err(e) => return Err(e),
-            }
+            }?;
         }
         Ok(())
     }
@@ -93,8 +87,8 @@ impl Decompiler for Assembly {
         input: &mut R,
         output: &mut W,
     ) -> io::Result<()> {
-        loop {
-            let res = match input.read_inst() {
+        while let Some(cmd) = input.read_inst() {
+            match cmd {
                 Ok((bytecode::CMD_PUSH, n)) => writeln!(output, "PUSH {}", n),
                 Ok((bytecode::CMD_DUP, _)) => writeln!(output, "DUP"),
                 Ok((bytecode::CMD_COPY, n)) => writeln!(output, "COPY {}", n),
@@ -121,12 +115,7 @@ impl Decompiler for Assembly {
                 Ok((bytecode::CMD_GETN, _)) => writeln!(output, "GETN"),
                 Ok(_) => Err(ErrorKind::InvalidInput.into()),
                 Err(e) => Err(e),
-            };
-            match res {
-                Err(ref e) if e.kind == EndOfFile => break,
-                Err(e) => return Err(e),
-                _ => continue,
-            };
+            }?;
         }
         Ok(())
     }
@@ -156,31 +145,31 @@ mod test {
             syntax.compile(&mut buffer, &mut bc).unwrap();
         }
         bc.seek(SeekFrom::Start(0)).unwrap();
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_PUSH, 1)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_DUP, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_COPY, 2)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_SWAP, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_DISCARD, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_SLIDE, 3)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_ADD, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_SUB, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_MUL, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_DIV, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_MOD, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_STORE, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_RETRIEVE, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_MARK, 4)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_CALL, 5)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_JUMP, 6)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_JUMPZ, 7)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_JUMPN, 8)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_RETURN, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_EXIT, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_PUTC, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_PUTN, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_GETC, 0)));
-        assert_eq!(bc.read_inst(), Ok((bytecode::CMD_GETN, 0)));
-        assert!(bc.read_inst().is_err());
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_PUSH, 1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_DUP, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_COPY, 2)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_SWAP, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_DISCARD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_SLIDE, 3)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_ADD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_SUB, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_MUL, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_DIV, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_MOD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_STORE, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_RETRIEVE, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_MARK, 4)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_CALL, 5)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_JUMP, 6)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_JUMPZ, 7)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_JUMPN, 8)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_RETURN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_EXIT, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_PUTC, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_PUTN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_GETC, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_GETN, 0)));
+        assert!(bc.read_inst().is_none());
     }
 
     #[test]

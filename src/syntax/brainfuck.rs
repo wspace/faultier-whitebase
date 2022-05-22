@@ -1,7 +1,7 @@
 //! Parser for Brainfuck.
 
 use std::collections::HashMap;
-use std::io::{self, BufRead, EndOfFile, ErrorKind};
+use std::io::{self, BufRead, ErrorKind};
 
 use bytecode::ByteCodeWriter;
 use ir;

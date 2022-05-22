@@ -1,6 +1,6 @@
 //! Parser and Generator for DT.
 
-use std::io::{self, BufRead, EndOfFile, ErrorKind, Write};
+use std::io::{self, BufRead, ErrorKind, Write};
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
 use ir;

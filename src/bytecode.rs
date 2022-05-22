@@ -1,6 +1,6 @@
 //! Bytecode utilities.
 
-use std::io::{self, EndOfFile, ErrorKind, Read, Seek, Write};
+use std::io::{self, ErrorKind, Read, Seek, Write};
 
 use ir;
 use ir::Instruction;
@@ -236,7 +236,7 @@ fn write_cmd_arg<W: Write>(w: &mut W, cmd: u8, arg: i64) -> io::Result<()> {
     w.write_all(&arg.to_be_bytes())
 }
 
-/// An iterator that convert to IR from bytes on each iteration, `read_inst()` encounters `EndOfFile`.
+/// An iterator that convert to IR from bytes on each iteration, until `read_inst()` encounters EOF.
 pub struct Instructions<'r, T: ?Sized> {
     reader: &'r mut T,
 }
@@ -245,7 +245,7 @@ impl<'r, B: ByteCodeReader> Iterator for Instructions<'r, B> {
     type Item = io::Result<Instruction>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.reader.read_inst() {
+        match self.reader.read_inst()? {
             Ok((CMD_PUSH, n)) => Some(Ok(ir::StackPush(n))),
             Ok((CMD_DUP, _)) => Some(Ok(ir::StackDuplicate)),
             Ok((CMD_COPY, n)) => Some(Ok(ir::StackCopy(n))),
@@ -270,9 +270,6 @@ impl<'r, B: ByteCodeReader> Iterator for Instructions<'r, B> {
             Ok((CMD_PUTN, _)) => Some(Ok(ir::PutNumber)),
             Ok((CMD_GETC, _)) => Some(Ok(ir::GetCharactor)),
             Ok((CMD_GETN, _)) => Some(Ok(ir::GetNumber)),
-            Err(io::Error {
-                kind: EndOfFile, ..
-            }) => None,
             Err(e) => Some(Err(e)),
             _ => Some(Err(ErrorKind::InvalidInput.into())),
         }
@@ -285,27 +282,28 @@ pub trait ByteCodeReader: Read + Seek {
     ///
     /// # Error
     ///
-    /// If an I/O error occurs, or EOF, then this function will return `Err`.
-    fn read_inst(&mut self) -> io::Result<(u8, i64)>;
+    /// If an I/O error occurs, then this function will return `Ok(Err(e))`.
+    /// On EOF, it returns `None`.
+    fn read_inst(&mut self) -> Option<io::Result<(u8, i64)>>;
 
     /// Create an iterator that convert to IR from bytes on each iteration
     /// until EOF.
     ///
     /// # Error
     ///
-    /// Any error other than `EndOfFile` that is produced by the underlying `Read`er
-    /// is returned by the iterator and should be handled by the caller.
+    /// Any error that is produced by the underlying `Read`er is returned by the
+    /// iterator and should be handled by the caller.
     fn disassemble<'r>(&'r mut self) -> Instructions<'r, Self> {
         Instructions { reader: self }
     }
 }
 
 impl<R: Read + Seek> ByteCodeReader for R {
-    fn read_inst(&mut self) -> io::Result<(u8, i64)> {
+    fn read_inst(&mut self) -> Option<io::Result<(u8, i64)>> {
         let mut buf = [0; 8];
         match self.read(&mut buf[..1]) {
-            Ok(0) => return Err(ErrorKind::UnexpectedEof.into()),
-            Err(e) => return Err(e),
+            Ok(0) => return None,
+            Err(e) => return Some(Err(e)),
             _ => {}
         }
         let n = buf[0];
@@ -313,13 +311,13 @@ impl<R: Read + Seek> ByteCodeReader for R {
             CMD_PUSH | CMD_COPY | CMD_SLIDE | CMD_MARK | CMD_CALL | CMD_JUMP | CMD_JUMPZ
             | CMD_JUMPN => {
                 if let Err(e) = self.read_exact(&mut buf) {
-                    return Err(e);
+                    return Some(Err(e));
                 }
                 i64::from_be_bytes(buf)
             }
             _ => 0,
         };
-        Ok((n, arg))
+        Some(Ok((n, arg)))
     }
 }
 
@@ -359,30 +357,31 @@ mod test {
         bc.write_getn().unwrap();
 
         bc.seek(SeekFrom::Start(0)).unwrap();
-        assert_eq!(bc.read_inst(), Ok((super::CMD_PUSH, -1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_DUP, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_COPY, 1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_SWAP, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_DISCARD, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_SLIDE, 2)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_ADD, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_SUB, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_MUL, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_DIV, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_MOD, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_STORE, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_RETRIEVE, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_MARK, -1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_CALL, 1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMP, -1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPZ, 1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPN, -1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_RETURN, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_EXIT, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTC, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTN, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_GETC, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_GETN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUSH, -1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DUP, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_COPY, 1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SWAP, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DISCARD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SLIDE, 2)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_ADD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SUB, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MUL, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DIV, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MOD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_STORE, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETRIEVE, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MARK, -1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_CALL, 1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMP, -1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPZ, 1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPN, -1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETURN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_EXIT, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTC, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETC, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETN, 0)));
+        assert!(bc.read_inst().is_none());
     }
 
     #[test]
@@ -419,30 +418,31 @@ mod test {
             bc.assemble(&mut it).unwrap();
         }
         bc.seek(SeekFrom::Start(0)).unwrap();
-        assert_eq!(bc.read_inst(), Ok((super::CMD_PUSH, 1)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_DUP, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_COPY, 2)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_SWAP, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_DISCARD, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_SLIDE, 3)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_ADD, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_SUB, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_MUL, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_DIV, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_MOD, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_STORE, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_RETRIEVE, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_MARK, 4)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_CALL, 5)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMP, 6)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPZ, 7)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_JUMPN, 8)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_RETURN, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_EXIT, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTC, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_PUTN, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_GETC, 0)));
-        assert_eq!(bc.read_inst(), Ok((super::CMD_GETN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUSH, 1)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DUP, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_COPY, 2)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SWAP, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DISCARD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SLIDE, 3)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_ADD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SUB, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MUL, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DIV, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MOD, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_STORE, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETRIEVE, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MARK, 4)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_CALL, 5)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMP, 6)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPZ, 7)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPN, 8)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETURN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_EXIT, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTC, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTN, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETC, 0)));
+        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETN, 0)));
+        assert!(bc.read_inst().is_none());
     }
 
     #[test]

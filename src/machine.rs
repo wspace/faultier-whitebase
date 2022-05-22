@@ -2,9 +2,7 @@
 
 use std::collections::{HashMap, TreeMap};
 use std::convert::{TryFrom, TryInto};
-use std::io::{
-    self, stdin, stdout, BufRead, BufReader, EndOfFile, ErrorKind, SeekFrom, Stdin, Stdout, Write,
-};
+use std::io::{self, stdin, stdout, BufRead, BufReader, ErrorKind, SeekFrom, Stdin, Stdout, Write};
 
 use log::debug;
 
@@ -77,7 +75,8 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         index: &mut HashMap<i64, u64>,
         caller: &mut Vec<u64>,
     ) -> MachineResult<bool> {
-        match program.read_inst() {
+        let cmd = program.read_inst().ok_or(MissingExitInstruction)?;
+        match cmd {
             Ok((bytecode::CMD_PUSH, n)) => {
                 debug!("PUSH {}", n);
                 self.push(n)?;
@@ -197,7 +196,6 @@ impl<B: BufRead, W: Write> Machine<B, W> {
                 self.get_num()?;
                 Ok(true)
             }
-            Err(ref e) if e.kind == EndOfFile => Err(MissingExitInstruction),
             Err(e) => Err(MachineIoError(e)),
             _ => Err(OtherMachineError),
         }
@@ -358,7 +356,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
             },
             None => loop {
                 match program.read_inst() {
-                    Ok((opcode, operand)) if opcode == bytecode::CMD_MARK => {
+                    Some(Ok((opcode, operand))) if opcode == bytecode::CMD_MARK => {
                         match program.stream_position() {
                             Ok(pos) => {
                                 index.insert(operand, pos);
@@ -369,8 +367,8 @@ impl<B: BufRead, W: Write> Machine<B, W> {
                             Err(err) => return Err(MachineIoError(err)),
                         }
                     }
-                    Err(ref e) if e.kind == EndOfFile => return Err(UndefinedLabel),
-                    Err(err) => return Err(MachineIoError(err)),
+                    Some(Err(err)) => return Err(MachineIoError(err)),
+                    None => return Err(UndefinedLabel),
                     _ => continue,
                 }
             },

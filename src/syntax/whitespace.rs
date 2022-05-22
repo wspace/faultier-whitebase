@@ -1,7 +1,7 @@
 //! Parser and Generator for Whitespace.
 
 use std::collections::HashMap;
-use std::io::{self, BufRead, EndOfFile, ErrorKind, Write};
+use std::io::{self, BufRead, ErrorKind, Write};
 use std::num::from_str_radix;
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};

@@ -1,6 +1,6 @@
 //! Parser for Ook!
 
-use std::io::{self, BufRead, EndOfFile, ErrorKind};
+use std::io::{self, BufRead, ErrorKind};
 use std::str::from_utf8;
 
 use bytecode::ByteCodeWriter;
@@ -98,20 +98,16 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                 }
             }
             match self.buffer.read(buf.mut_slice_from(1)) {
-                Ok(n) if n == 8 => (),
+                Ok(8) => {}
+                Ok(0) => return None,
                 Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
-                Err(io::Error {
-                    kind: EndOfFile, ..
-                }) => return None,
                 Err(e) => return Some(Err(e)),
             }
         } else {
             match self.buffer.read(&mut buf) {
-                Ok(n) if n == 9 => (),
+                Ok(9) => {}
+                Ok(0) => return None,
                 Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
-                Err(io::Error {
-                    kind: EndOfFile, ..
-                }) => return None,
                 Err(e) => return Some(Err(e)),
             }
             self.is_start = false;
