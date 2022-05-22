@@ -98,7 +98,7 @@ impl<W: Write> ByteCodeWriter for W {
         &mut self,
         iter: &mut I,
     ) -> io::Result<()> {
-        for inst in *iter {
+        for inst in iter {
             match inst {
                 Ok(ir::StackPush(n)) => self.write_push(n),
                 Ok(ir::StackDuplicate) => self.write_dup(),
@@ -236,7 +236,7 @@ impl<W: Write> ByteCodeWriter for W {
 }
 
 /// An iterator that convert to IR from bytes on each iteration, `read_inst()` encounters `EndOfFile`.
-pub struct Instructions<'r, T> {
+pub struct Instructions<'r, T: ?Sized> {
     reader: &'r mut T,
 }
 

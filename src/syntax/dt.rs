@@ -36,7 +36,7 @@ impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
             Ok(_) => (),
         }
 
-        Some(match res.unwrap().as_slice() {
+        Some(match res.unwrap().as_str() {
             S => Ok(Space),
             T => Ok(Tab),
             N => Ok(LF),
@@ -137,30 +137,30 @@ impl Decompiler for DT {
     ) -> io::Result<()> {
         for inst in input.disassemble() {
             match inst {
-                Ok(ir::StackPush(n)) => self.write_num(output, [S, S], n),
-                Ok(ir::StackDuplicate) => self.write(output, [S, N, S]),
-                Ok(ir::StackCopy(n)) => self.write_num(output, [S, T, S], n),
-                Ok(ir::StackSwap) => self.write(output, [S, N, T]),
-                Ok(ir::StackDiscard) => self.write(output, [S, N, N]),
-                Ok(ir::StackSlide(n)) => self.write_num(output, [S, T, N], n),
-                Ok(ir::Addition) => self.write(output, [T, S, S, S]),
-                Ok(ir::Subtraction) => self.write(output, [T, S, S, T]),
-                Ok(ir::Multiplication) => self.write(output, [T, S, S, N]),
-                Ok(ir::Division) => self.write(output, [T, S, T, S]),
-                Ok(ir::Modulo) => self.write(output, [T, S, T, T]),
-                Ok(ir::HeapStore) => self.write(output, [T, T, S]),
-                Ok(ir::HeapRetrieve) => self.write(output, [T, T, T]),
-                Ok(ir::Mark(n)) => self.write_num(output, [N, S, S], n),
-                Ok(ir::Call(n)) => self.write_num(output, [N, S, T], n),
-                Ok(ir::Jump(n)) => self.write_num(output, [N, S, N], n),
-                Ok(ir::JumpIfZero(n)) => self.write_num(output, [N, T, S], n),
-                Ok(ir::JumpIfNegative(n)) => self.write_num(output, [N, T, T], n),
-                Ok(ir::Return) => self.write(output, [N, T, N]),
-                Ok(ir::Exit) => self.write(output, [N, N, N]),
-                Ok(ir::PutCharactor) => self.write(output, [T, N, S, S]),
-                Ok(ir::PutNumber) => self.write(output, [T, N, S, T]),
-                Ok(ir::GetCharactor) => self.write(output, [T, N, T, S]),
-                Ok(ir::GetNumber) => self.write(output, [T, N, T, T]),
+                Ok(ir::StackPush(n)) => self.write_num(output, &[S, S], n),
+                Ok(ir::StackDuplicate) => self.write(output, &[S, N, S]),
+                Ok(ir::StackCopy(n)) => self.write_num(output, &[S, T, S], n),
+                Ok(ir::StackSwap) => self.write(output, &[S, N, T]),
+                Ok(ir::StackDiscard) => self.write(output, &[S, N, N]),
+                Ok(ir::StackSlide(n)) => self.write_num(output, &[S, T, N], n),
+                Ok(ir::Addition) => self.write(output, &[T, S, S, S]),
+                Ok(ir::Subtraction) => self.write(output, &[T, S, S, T]),
+                Ok(ir::Multiplication) => self.write(output, &[T, S, S, N]),
+                Ok(ir::Division) => self.write(output, &[T, S, T, S]),
+                Ok(ir::Modulo) => self.write(output, &[T, S, T, T]),
+                Ok(ir::HeapStore) => self.write(output, &[T, T, S]),
+                Ok(ir::HeapRetrieve) => self.write(output, &[T, T, T]),
+                Ok(ir::Mark(n)) => self.write_num(output, &[N, S, S], n),
+                Ok(ir::Call(n)) => self.write_num(output, &[N, S, T], n),
+                Ok(ir::Jump(n)) => self.write_num(output, &[N, S, N], n),
+                Ok(ir::JumpIfZero(n)) => self.write_num(output, &[N, T, S], n),
+                Ok(ir::JumpIfNegative(n)) => self.write_num(output, &[N, T, T], n),
+                Ok(ir::Return) => self.write(output, &[N, T, N]),
+                Ok(ir::Exit) => self.write(output, &[N, N, N]),
+                Ok(ir::PutCharactor) => self.write(output, &[T, N, S, S]),
+                Ok(ir::PutNumber) => self.write(output, &[T, N, S, T]),
+                Ok(ir::GetCharactor) => self.write(output, &[T, N, T, S]),
+                Ok(ir::GetNumber) => self.write(output, &[T, N, T, T]),
                 Err(e) => Err(e),
             }?;
         }
@@ -265,6 +265,6 @@ mod test {
             "童貞ちゃうわっ！…童貞ちゃうわっ！童貞ちゃうわっ！",
         ]
         .concat();
-        assert_eq!(result, expected.as_slice());
+        assert_eq!(result, expected);
     }
 }

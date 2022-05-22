@@ -36,16 +36,15 @@ impl Compiler for Assembly {
             let ret = match input.read_line() {
                 Ok(line) => {
                     let inst = line.replace("\n", "");
-                    let slice = inst.as_slice();
-                    if slice.len() == 0 {
+                    if inst.len() == 0 {
                         continue;
                     }
-                    if slice.char_at(0) == ';' {
+                    if inst.char_at(0) == ';' {
                         continue;
                     }
-                    let (mnemonic, val) = match slice.find(' ') {
-                        Some(n) => (slice.slice_to(n), slice.slice_from(n + 1)),
-                        None => (slice, ""),
+                    let (mnemonic, val) = match inst.find(' ') {
+                        Some(n) => (inst.slice_to(n), inst.slice_from(n + 1)),
+                        None => (inst.as_str(), ""),
                     };
                     match mnemonic {
                         "PUSH" => output.write_push(try_number!(val)),
@@ -224,6 +223,6 @@ mod test {
             "RETURN", "EXIT", "PUTC", "PUTN", "GETC", "GETN", "",
         ]
         .connect("\n");
-        assert_eq!(result, expected.as_slice());
+        assert_eq!(result, expected);
     }
 }

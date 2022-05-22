@@ -220,7 +220,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
         let val = self.stack.pop().unwrap();
         self.stack.push(val);
-        self.stack.push_all(tmp.as_slice());
+        self.stack.push_all(&tmp);
         self.stack.push(val);
         Ok(())
     }

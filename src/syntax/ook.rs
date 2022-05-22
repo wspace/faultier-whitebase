@@ -34,7 +34,7 @@ impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
             Ok(_) => (),
         }
 
-        Some(match res.unwrap().as_slice() {
+        Some(match res.unwrap().as_str() {
             "Ook. Ook?" => Ok(MoveRight),
             "Ook? Ook." => Ok(MoveLeft),
             "Ook. Ook." => Ok(Increment),
@@ -106,7 +106,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                 Err(e) => return Some(Err(e)),
             }
         } else {
-            match self.buffer.read(buf) {
+            match self.buffer.read(&mut buf) {
                 Ok(n) if n == 9 => (),
                 Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
                 Err(io::Error {
@@ -117,7 +117,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
             self.is_start = false;
         }
 
-        match from_utf8(buf) {
+        match from_utf8(&buf) {
             Some(string) => Some(Ok(String::from_str(string))),
             None => Some(Err(ErrorKind::InvalidInput.into())),
         }

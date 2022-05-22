@@ -84,7 +84,7 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
     fn parse_number(&mut self) -> io::Result<i64> {
         let positive = self.parse_sign()?;
         let value = self.parse_value()?;
-        match from_str_radix::<i64>(value.as_slice(), 2) {
+        match from_str_radix::<i64>(&value, 2) {
             Some(n) => Ok(if positive { n } else { n * -1 }),
             None => Err(ErrorKind::InvalidInput.into()),
         }
