@@ -361,7 +361,7 @@ impl Decompiler for Whitespace {
 
 #[cfg(test)]
 mod test {
-    use std::io::{Cursor, Seek, SeekFrom};
+    use std::io::{self, Cursor, Seek, SeekFrom};
     use std::str::from_utf8;
 
     use bytecode::ByteCodeWriter;
@@ -371,21 +371,17 @@ mod test {
     #[test]
     fn test_scan() {
         let mut buffer = Cursor::new(" [\t饂飩]\n".as_bytes());
-        let mut it = super::scan(&mut buffer);
-        assert_eq!(it.next(), Some(Ok(' ')));
-        assert_eq!(it.next(), Some(Ok('\t')));
-        assert_eq!(it.next(), Some(Ok('\n')));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer);
+        let expected = &[' ', '\t', '\n'];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 
     #[test]
     fn test_tokenize() {
         let mut buffer = Cursor::new(" [\t饂飩]\n".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize();
-        assert_eq!(it.next(), Some(Ok(super::Space)));
-        assert_eq!(it.next(), Some(Ok(super::Tab)));
-        assert_eq!(it.next(), Some(Ok(super::LF)));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize();
+        let expected = &[super::Space, super::Tab, super::LF];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 
     #[test]
@@ -418,32 +414,34 @@ mod test {
         ]
         .concat();
         let mut buffer = Cursor::new(source.as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        assert_eq!(it.next(), Some(Ok(StackPush(1))));
-        assert_eq!(it.next(), Some(Ok(StackDuplicate)));
-        assert_eq!(it.next(), Some(Ok(StackCopy(1))));
-        assert_eq!(it.next(), Some(Ok(StackSwap)));
-        assert_eq!(it.next(), Some(Ok(StackDiscard)));
-        assert_eq!(it.next(), Some(Ok(StackSlide(1))));
-        assert_eq!(it.next(), Some(Ok(Addition)));
-        assert_eq!(it.next(), Some(Ok(Subtraction)));
-        assert_eq!(it.next(), Some(Ok(Multiplication)));
-        assert_eq!(it.next(), Some(Ok(Division)));
-        assert_eq!(it.next(), Some(Ok(Modulo)));
-        assert_eq!(it.next(), Some(Ok(HeapStore)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(Mark(1))));
-        assert_eq!(it.next(), Some(Ok(Call(2))));
-        assert_eq!(it.next(), Some(Ok(Jump(1))));
-        assert_eq!(it.next(), Some(Ok(JumpIfZero(2))));
-        assert_eq!(it.next(), Some(Ok(JumpIfNegative(1))));
-        assert_eq!(it.next(), Some(Ok(Return)));
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(PutCharactor)));
-        assert_eq!(it.next(), Some(Ok(PutNumber)));
-        assert_eq!(it.next(), Some(Ok(GetCharactor)));
-        assert_eq!(it.next(), Some(Ok(GetNumber)));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            StackPush(1),
+            StackDuplicate,
+            StackCopy(1),
+            StackSwap,
+            StackDiscard,
+            StackSlide(1),
+            Addition,
+            Subtraction,
+            Multiplication,
+            Division,
+            Modulo,
+            HeapStore,
+            HeapRetrieve,
+            Mark(1),
+            Call(2),
+            Jump(1),
+            JumpIfZero(2),
+            JumpIfNegative(1),
+            Return,
+            Exit,
+            PutCharactor,
+            PutNumber,
+            GetCharactor,
+            GetNumber,
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 
     #[test]

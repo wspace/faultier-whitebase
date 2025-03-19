@@ -150,7 +150,7 @@ impl Compiler for Ook {
 
 #[cfg(test)]
 mod test {
-    use std::io::Cursor;
+    use std::io::{self, Cursor};
 
     use syntax::brainfuck::{
         Decrement, Get, Increment, LoopEnd, LoopStart, MoveLeft, MoveRight, Put,
@@ -160,9 +160,9 @@ mod test {
     fn test_scan() {
         let mut buffer = Cursor::new("Ook? Ook. Ook! Ook.\nOok. Ook? Ook.".as_bytes());
         let mut it = super::scan(&mut buffer);
-        assert_eq!(it.next(), Some(Ok("Ook? Ook.".to_string())));
-        assert_eq!(it.next(), Some(Ok("Ook! Ook.".to_string())));
-        assert_eq!(it.next(), Some(Ok("Ook. Ook?".to_string())));
+        assert_eq!(it.next().unwrap().unwrap(), "Ook? Ook.");
+        assert_eq!(it.next().unwrap().unwrap(), "Ook! Ook.");
+        assert_eq!(it.next().unwrap().unwrap(), "Ook. Ook?");
         assert!(it.next().unwrap().is_err());
     }
 
@@ -180,15 +180,10 @@ mod test {
         ]
         .connect(" ");
         let mut buffer = Cursor::new(source.as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize();
-        assert_eq!(it.next(), Some(Ok(MoveRight)));
-        assert_eq!(it.next(), Some(Ok(MoveLeft)));
-        assert_eq!(it.next(), Some(Ok(Increment)));
-        assert_eq!(it.next(), Some(Ok(Decrement)));
-        assert_eq!(it.next(), Some(Ok(Get)));
-        assert_eq!(it.next(), Some(Ok(Put)));
-        assert_eq!(it.next(), Some(Ok(LoopStart)));
-        assert_eq!(it.next(), Some(Ok(LoopEnd)));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize();
+        let expected = &[
+            MoveRight, MoveLeft, Increment, Decrement, Get, Put, LoopStart, LoopEnd,
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 }

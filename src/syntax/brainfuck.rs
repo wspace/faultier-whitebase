@@ -254,136 +254,144 @@ impl Compiler for Brainfuck {
 
 #[cfg(test)]
 mod test {
-    use std::io::Cursor;
+    use std::io::{self, Cursor};
 
     use ir::*;
 
     #[test]
     fn test_scan() {
         let mut buffer = Cursor::new("><+- ,.\n[饂飩]".as_bytes());
-        let mut it = super::scan(&mut buffer);
-        assert_eq!(it.next(), Some(Ok('>')));
-        assert_eq!(it.next(), Some(Ok('<')));
-        assert_eq!(it.next(), Some(Ok('+')));
-        assert_eq!(it.next(), Some(Ok('-')));
-        assert_eq!(it.next(), Some(Ok(',')));
-        assert_eq!(it.next(), Some(Ok('.')));
-        assert_eq!(it.next(), Some(Ok('[')));
-        assert_eq!(it.next(), Some(Ok(']')));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer);
+        let expected = &['>', '<', '+', '-', ',', '.', '[', ']'];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 
     #[test]
     fn test_tokenize() {
         let mut buffer = Cursor::new("><+- ,.\n[饂飩]".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize();
-        assert_eq!(it.next(), Some(Ok(super::MoveRight)));
-        assert_eq!(it.next(), Some(Ok(super::MoveLeft)));
-        assert_eq!(it.next(), Some(Ok(super::Increment)));
-        assert_eq!(it.next(), Some(Ok(super::Decrement)));
-        assert_eq!(it.next(), Some(Ok(super::Get)));
-        assert_eq!(it.next(), Some(Ok(super::Put)));
-        assert_eq!(it.next(), Some(Ok(super::LoopStart)));
-        assert_eq!(it.next(), Some(Ok(super::LoopEnd)));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize();
+        let expected = &[
+            super::MoveRight,
+            super::MoveLeft,
+            super::Increment,
+            super::Decrement,
+            super::Get,
+            super::Put,
+            super::LoopStart,
+            super::LoopEnd,
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 
     #[test]
     fn test_parse() {
         let mut buffer = Cursor::new(">".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(StackDuplicate)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(StackPush(1))));
-        assert_eq!(it.next(), Some(Ok(Addition)));
-        assert_eq!(it.next(), Some(Ok(HeapStore)));
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            StackPush(super::BF_PTR_ADDR),
+            StackDuplicate,
+            HeapRetrieve,
+            StackPush(1),
+            Addition,
+            HeapStore,
+            Exit,
+            Mark(super::BF_FAIL_MARKER),
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
 
         let mut buffer = Cursor::new("<".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(StackDuplicate)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(StackPush(1))));
-        assert_eq!(it.next(), Some(Ok(Subtraction)));
-        assert_eq!(it.next(), Some(Ok(StackDuplicate)));
-        assert_eq!(it.next(), Some(Ok(JumpIfNegative(super::BF_FAIL_MARKER))));
-        assert_eq!(it.next(), Some(Ok(HeapStore)));
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            StackPush(super::BF_PTR_ADDR),
+            StackDuplicate,
+            HeapRetrieve,
+            StackPush(1),
+            Subtraction,
+            StackDuplicate,
+            JumpIfNegative(super::BF_FAIL_MARKER),
+            HeapStore,
+            Exit,
+            Mark(super::BF_FAIL_MARKER),
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
 
         let mut buffer = Cursor::new("+".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(StackDuplicate)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(StackPush(1))));
-        assert_eq!(it.next(), Some(Ok(Addition)));
-        assert_eq!(it.next(), Some(Ok(HeapStore)));
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            StackPush(super::BF_PTR_ADDR),
+            HeapRetrieve,
+            StackDuplicate,
+            HeapRetrieve,
+            StackPush(1),
+            Addition,
+            HeapStore,
+            Exit,
+            Mark(super::BF_FAIL_MARKER),
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
 
         let mut buffer = Cursor::new("-".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(StackDuplicate)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(StackPush(1))));
-        assert_eq!(it.next(), Some(Ok(Subtraction)));
-        assert_eq!(it.next(), Some(Ok(HeapStore)));
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            StackPush(super::BF_PTR_ADDR),
+            HeapRetrieve,
+            StackDuplicate,
+            HeapRetrieve,
+            StackPush(1),
+            Subtraction,
+            HeapStore,
+            Exit,
+            Mark(super::BF_FAIL_MARKER),
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
 
         let mut buffer = Cursor::new(",".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(GetCharactor)));
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            StackPush(super::BF_PTR_ADDR),
+            HeapRetrieve,
+            HeapRetrieve,
+            GetCharactor,
+            Exit,
+            Mark(super::BF_FAIL_MARKER),
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
 
         let mut buffer = Cursor::new(".".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(PutCharactor)));
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            StackPush(super::BF_PTR_ADDR),
+            HeapRetrieve,
+            HeapRetrieve,
+            PutCharactor,
+            Exit,
+            Mark(super::BF_FAIL_MARKER),
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
 
         let mut buffer = Cursor::new("[[]]".as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize().parse();
-        // outer loop
-        assert_eq!(it.next(), Some(Ok(Mark(1))));
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(JumpIfZero(2))));
-        // inner loop
-        assert_eq!(it.next(), Some(Ok(Mark(3))));
-        assert_eq!(it.next(), Some(Ok(StackPush(super::BF_PTR_ADDR))));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(HeapRetrieve)));
-        assert_eq!(it.next(), Some(Ok(JumpIfZero(4))));
-        assert_eq!(it.next(), Some(Ok(Jump(3))));
-        assert_eq!(it.next(), Some(Ok(Mark(4))));
-        // outer loop
-        assert_eq!(it.next(), Some(Ok(Jump(1))));
-        assert_eq!(it.next(), Some(Ok(Mark(2))));
-
-        assert_eq!(it.next(), Some(Ok(Exit)));
-        assert_eq!(it.next(), Some(Ok(Mark(super::BF_FAIL_MARKER))));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize().parse();
+        let expected = &[
+            // outer loop
+            Mark(1),
+            StackPush(super::BF_PTR_ADDR),
+            HeapRetrieve,
+            HeapRetrieve,
+            JumpIfZero(2),
+            // inner loop
+            Mark(3),
+            StackPush(super::BF_PTR_ADDR),
+            HeapRetrieve,
+            HeapRetrieve,
+            JumpIfZero(4),
+            Jump(3),
+            Mark(4),
+            // outer loop
+            Jump(1),
+            Mark(2),
+            Exit,
+            Mark(super::BF_FAIL_MARKER),
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 }

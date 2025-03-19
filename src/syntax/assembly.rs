@@ -142,30 +142,33 @@ mod test {
             syntax.compile(&mut buffer, &mut bc).unwrap();
         }
         bc.seek(SeekFrom::Start(0)).unwrap();
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_PUSH, 1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_DUP, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_COPY, 2)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_SWAP, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_DISCARD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_SLIDE, 3)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_ADD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_SUB, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_MUL, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_DIV, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_MOD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_STORE, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_RETRIEVE, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_MARK, 4)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_CALL, 5)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_JUMP, 6)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_JUMPZ, 7)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_JUMPN, 8)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_RETURN, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_EXIT, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_PUTC, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_PUTN, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_GETC, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((bytecode::CMD_GETN, 0)));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_PUSH, 1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_DUP, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_COPY, 2));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_SWAP, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_DISCARD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_SLIDE, 3));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_ADD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_SUB, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_MUL, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_DIV, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_MOD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_STORE, 0));
+        assert_eq!(
+            bc.read_inst().unwrap().unwrap(),
+            (bytecode::CMD_RETRIEVE, 0),
+        );
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_MARK, 4));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_CALL, 5));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_JUMP, 6));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_JUMPZ, 7));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_JUMPN, 8));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_RETURN, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_EXIT, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_PUTC, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_PUTN, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_GETC, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (bytecode::CMD_GETN, 0));
         assert!(bc.read_inst().is_none());
     }
 

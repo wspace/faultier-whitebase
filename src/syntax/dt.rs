@@ -170,7 +170,7 @@ impl Decompiler for DT {
 
 #[cfg(test)]
 mod test {
-    use std::io::{Cursor, Seek, SeekFrom};
+    use std::io::{self, Cursor, Seek, SeekFrom};
     use std::str::from_utf8;
 
     use bytecode::ByteCodeWriter;
@@ -185,22 +185,18 @@ mod test {
     fn test_scan() {
         let source = vec![S, "童貞饂飩ちゃうわっ！", T, "\n", N].concat();
         let mut buffer = Cursor::new(source.as_bytes());
-        let mut it = super::scan(&mut buffer);
-        assert_eq!(it.next(), Some(Ok(S.to_string())));
-        assert_eq!(it.next(), Some(Ok(T.to_string())));
-        assert_eq!(it.next(), Some(Ok(N.to_string())));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer);
+        let expected = &[S, T, N];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 
     #[test]
     fn test_tokenize() {
         let source = vec![S, "童貞饂飩ちゃうわっ！", T, "\n", N].concat();
         let mut buffer = Cursor::new(source.as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize();
-        assert_eq!(it.next(), Some(Ok(Space)));
-        assert_eq!(it.next(), Some(Ok(Tab)));
-        assert_eq!(it.next(), Some(Ok(LF)));
-        assert!(it.next().is_none());
+        let it = super::scan(&mut buffer).tokenize();
+        let expected = &[Space, Tab, LF];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 
     #[test]

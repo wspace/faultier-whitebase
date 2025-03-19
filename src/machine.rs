@@ -12,7 +12,7 @@ use bytecode::ByteCodeReader;
 pub type MachineResult<T> = Result<T, MachineError>;
 
 /// A list specifying VM error.
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub enum MachineError {
     /// Empty stack poped.
     IllegalStackManipulation,
@@ -564,7 +564,7 @@ mod test {
         assert_eq!(caller.len(), 1);
         vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(caller.len(), 0);
-        assert_eq!(vm.step(&mut bc, &mut index, &mut caller), Ok(false));
+        assert_eq!(vm.step(&mut bc, &mut index, &mut caller).unwrap(), false);
     }
 
     #[test]

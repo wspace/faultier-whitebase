@@ -357,30 +357,30 @@ mod test {
         bc.write_getn().unwrap();
 
         bc.seek(SeekFrom::Start(0)).unwrap();
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUSH, -1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DUP, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_COPY, 1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SWAP, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DISCARD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SLIDE, 2)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_ADD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SUB, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MUL, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DIV, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MOD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_STORE, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETRIEVE, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MARK, -1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_CALL, 1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMP, -1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPZ, 1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPN, -1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETURN, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_EXIT, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTC, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTN, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETC, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETN, 0)));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_PUSH, -1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_DUP, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_COPY, 1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_SWAP, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_DISCARD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_SLIDE, 2));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_ADD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_SUB, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_MUL, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_DIV, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_MOD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_STORE, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_RETRIEVE, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_MARK, -1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_CALL, 1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_JUMP, -1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_JUMPZ, 1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_JUMPN, -1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_RETURN, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_EXIT, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_PUTC, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_PUTN, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_GETC, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_GETN, 0));
         assert!(bc.read_inst().is_none());
     }
 
@@ -418,30 +418,30 @@ mod test {
             bc.assemble(&mut it).unwrap();
         }
         bc.seek(SeekFrom::Start(0)).unwrap();
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUSH, 1)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DUP, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_COPY, 2)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SWAP, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DISCARD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SLIDE, 3)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_ADD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_SUB, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MUL, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_DIV, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MOD, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_STORE, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETRIEVE, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_MARK, 4)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_CALL, 5)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMP, 6)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPZ, 7)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_JUMPN, 8)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_RETURN, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_EXIT, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTC, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_PUTN, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETC, 0)));
-        assert_eq!(bc.read_inst().unwrap(), Ok((super::CMD_GETN, 0)));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_PUSH, 1));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_DUP, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_COPY, 2));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_SWAP, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_DISCARD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_SLIDE, 3));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_ADD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_SUB, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_MUL, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_DIV, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_MOD, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_STORE, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_RETRIEVE, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_MARK, 4));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_CALL, 5));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_JUMP, 6));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_JUMPZ, 7));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_JUMPN, 8));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_RETURN, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_EXIT, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_PUTC, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_PUTN, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_GETC, 0));
+        assert_eq!(bc.read_inst().unwrap().unwrap(), (super::CMD_GETN, 0));
         assert!(bc.read_inst().is_none());
     }
 
@@ -474,31 +474,33 @@ mod test {
         bc.write_getn().unwrap();
 
         bc.seek(SeekFrom::Start(0)).unwrap();
-        let mut it = bc.disassemble();
-        assert_eq!(it.next().unwrap(), Ok(ir::StackPush(-1)));
-        assert_eq!(it.next().unwrap(), Ok(ir::StackDuplicate));
-        assert_eq!(it.next().unwrap(), Ok(ir::StackCopy(1)));
-        assert_eq!(it.next().unwrap(), Ok(ir::StackSwap));
-        assert_eq!(it.next().unwrap(), Ok(ir::StackDiscard));
-        assert_eq!(it.next().unwrap(), Ok(ir::StackSlide(2)));
-        assert_eq!(it.next().unwrap(), Ok(ir::Addition));
-        assert_eq!(it.next().unwrap(), Ok(ir::Subtraction));
-        assert_eq!(it.next().unwrap(), Ok(ir::Multiplication));
-        assert_eq!(it.next().unwrap(), Ok(ir::Division));
-        assert_eq!(it.next().unwrap(), Ok(ir::Modulo));
-        assert_eq!(it.next().unwrap(), Ok(ir::HeapStore));
-        assert_eq!(it.next().unwrap(), Ok(ir::HeapRetrieve));
-        assert_eq!(it.next().unwrap(), Ok(ir::Mark(-1)));
-        assert_eq!(it.next().unwrap(), Ok(ir::Call(1)));
-        assert_eq!(it.next().unwrap(), Ok(ir::Jump(-1)));
-        assert_eq!(it.next().unwrap(), Ok(ir::JumpIfZero(1)));
-        assert_eq!(it.next().unwrap(), Ok(ir::JumpIfNegative(-1)));
-        assert_eq!(it.next().unwrap(), Ok(ir::Return));
-        assert_eq!(it.next().unwrap(), Ok(ir::Exit));
-        assert_eq!(it.next().unwrap(), Ok(ir::PutCharactor));
-        assert_eq!(it.next().unwrap(), Ok(ir::PutNumber));
-        assert_eq!(it.next().unwrap(), Ok(ir::GetCharactor));
-        assert_eq!(it.next().unwrap(), Ok(ir::GetNumber));
-        assert!(it.next().is_none());
+        let it = bc.disassemble();
+        let expected = &[
+            ir::StackPush(-1),
+            ir::StackDuplicate,
+            ir::StackCopy(1),
+            ir::StackSwap,
+            ir::StackDiscard,
+            ir::StackSlide(2),
+            ir::Addition,
+            ir::Subtraction,
+            ir::Multiplication,
+            ir::Division,
+            ir::Modulo,
+            ir::HeapStore,
+            ir::HeapRetrieve,
+            ir::Mark(-1),
+            ir::Call(1),
+            ir::Jump(-1),
+            ir::JumpIfZero(1),
+            ir::JumpIfNegative(-1),
+            ir::Return,
+            ir::Exit,
+            ir::PutCharactor,
+            ir::PutNumber,
+            ir::GetCharactor,
+            ir::GetNumber,
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 }
