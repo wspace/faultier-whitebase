@@ -36,11 +36,11 @@ impl Compiler for Assembly {
                     if inst.len() == 0 {
                         continue;
                     }
-                    if inst.char_at(0) == ';' {
+                    if inst.starts_with(';') {
                         continue;
                     }
                     let (mnemonic, val) = match inst.find(' ') {
-                        Some(n) => (inst.slice_to(n), inst.slice_from(n + 1)),
+                        Some(n) => (&inst[..n], &inst[n + 1..]),
                         None => (inst.as_str(), ""),
                     };
                     match mnemonic {

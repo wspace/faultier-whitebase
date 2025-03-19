@@ -570,7 +570,7 @@ mod test {
     #[test]
     fn test_io() {
         let mut heap = [0, 0];
-        let mut buf = [0, ..2];
+        let mut buf = [0; 2];
         {
             let mut bc = Cursor::new(Vec::new());
             bc.write_getc().unwrap();

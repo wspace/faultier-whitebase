@@ -71,7 +71,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
     type Item = io::Result<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut buf = [0u8, ..9];
+        let mut buf = [0u8; 9];
 
         if !self.is_start {
             // skip separator
@@ -97,7 +97,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                     Err(e) => return Some(Err(e)),
                 }
             }
-            match self.buffer.read(buf.mut_slice_from(1)) {
+            match self.buffer.read(&mut buf[1..]) {
                 Ok(8) => {}
                 Ok(0) => return None,
                 Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),

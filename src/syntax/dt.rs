@@ -61,13 +61,13 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
     fn next(&mut self) -> Option<Self::Item> {
         'outer: loop {
             match self.buffer.read_char() {
-                Ok(c) if c == S.char_at(0) => return Some(Ok(S.to_string())),
-                Ok(c) if c == N.char_at(0) => return Some(Ok(N.to_string())),
-                Ok(c) if c == T.char_at(0) => {
-                    for i in range(1u, 8) {
+                Ok(c) if c == S.chars().next().unwrap() => return Some(Ok(S.to_string())),
+                Ok(c) if c == N.chars().next().unwrap() => return Some(Ok(N.to_string())),
+                Ok(c) if c == T.chars().next().unwrap() => {
+                    for tc in T.chars().skip(1) {
                         match self.buffer.read_char() {
                             Ok(c) => {
-                                if c != T.char_at(i * 3) {
+                                if c != tc {
                                     continue 'outer;
                                 }
                             }
