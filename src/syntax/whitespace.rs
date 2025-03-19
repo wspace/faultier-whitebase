@@ -53,8 +53,8 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
         let mut value = String::new();
         loop {
             match self.tokens.next() {
-                Some(Ok(Space)) => value.push_char('0'),
-                Some(Ok(Tab)) => value.push_char('1'),
+                Some(Ok(Space)) => value.push('0'),
+                Some(Ok(Tab)) => value.push('1'),
                 Some(Ok(LF)) => break,
                 Some(Err(e)) => return Err(e),
                 None => {
@@ -91,8 +91,8 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
 
     fn parse_label(&mut self) -> io::Result<i64> {
         let label = self.parse_value()?;
-        match self.labels.find_copy(&label) {
-            Some(val) => Ok(val),
+        match self.labels.get(&label) {
+            Some(&val) => Ok(val),
             None => {
                 let val = self.count;
                 self.count += 1;

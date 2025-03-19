@@ -414,7 +414,7 @@ mod test {
                 Ok(ir::GetCharactor),
                 Ok(ir::GetNumber),
             ];
-            let mut it = vec.move_iter();
+            let mut it = vec.into_iter();
             bc.assemble(&mut it).unwrap();
         }
         bc.seek(SeekFrom::Start(0)).unwrap();

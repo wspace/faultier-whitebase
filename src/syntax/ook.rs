@@ -178,7 +178,7 @@ mod test {
             "Ook! Ook?",
             "Ook? Ook!",
         ]
-        .connect(" ");
+        .join(" ");
         let mut buffer = Cursor::new(source.as_bytes());
         let it = super::scan(&mut buffer).tokenize();
         let expected = &[

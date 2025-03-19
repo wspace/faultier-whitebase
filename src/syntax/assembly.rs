@@ -134,7 +134,7 @@ mod test {
             "MOD", "STORE", "RETRIEVE", "MARK 4", "CALL 5", "JUMP 6", "JUMPZ 7", "JUMPN 8",
             "RETURN", "EXIT", "PUTC", "PUTN", "GETC", "GETN",
         ]
-        .connect("\n");
+        .join("\n");
         let mut bc = Cursor::new(Vec::new());
         {
             let syntax = super::Assembly::new();
@@ -211,7 +211,7 @@ mod test {
             "MOD", "STORE", "RETRIEVE", "MARK 1", "CALL 15", "JUMP 2", "JUMPZ 16", "JUMPN 32",
             "RETURN", "EXIT", "PUTC", "PUTN", "GETC", "GETN", "",
         ]
-        .connect("\n");
+        .join("\n");
         assert_eq!(result, expected);
     }
 }

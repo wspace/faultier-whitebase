@@ -1,6 +1,6 @@
 //! A virtual machine that execute Whitebase bytecode.
 
-use std::collections::{HashMap, TreeMap};
+use std::collections::{BTreeMap, HashMap};
 use std::convert::{TryFrom, TryInto};
 use std::io::{self, stdin, stdout, BufRead, BufReader, ErrorKind, SeekFrom, Stdin, Stdout, Write};
 
@@ -35,7 +35,7 @@ use self::MachineError::*;
 /// A virtual machine.
 pub struct Machine<B, W> {
     stack: Vec<i64>,
-    heap: TreeMap<i64, i64>,
+    heap: BTreeMap<i64, i64>,
     stdin: B,
     stdout: W,
 }
@@ -50,7 +50,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
     pub fn new(stdin: B, stdout: W) -> Machine<B, W> {
         Machine {
             stack: Vec::new(),
-            heap: TreeMap::new(),
+            heap: BTreeMap::new(),
             stdin: stdin,
             stdout: stdout,
         }
@@ -218,7 +218,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
         let val = self.stack.pop().unwrap();
         self.stack.push(val);
-        self.stack.push_all(&tmp);
+        self.stack.extend_from_slice(&tmp);
         self.stack.push(val);
         Ok(())
     }
@@ -302,7 +302,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
     fn retrieve(&mut self) -> MachineResult<()> {
         match self.stack.pop() {
             Some(addr) => {
-                self.stack.push(match self.heap.find(&addr) {
+                self.stack.push(match self.heap.get(&addr) {
                     Some(val) => *val,
                     None => 0,
                 });
@@ -349,8 +349,8 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         index: &mut HashMap<i64, u64>,
         label: &i64,
     ) -> MachineResult<()> {
-        match index.find_copy(label) {
-            Some(pos) => match program.seek(SeekFrom::Start(pos)) {
+        match index.get(label) {
+            Some(&pos) => match program.seek(SeekFrom::Start(pos)) {
                 Ok(_) => Ok(()),
                 Err(err) => Err(MachineIoError(err)),
             },
@@ -501,7 +501,7 @@ mod test {
         let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
-        vm.stack.push_all([2, 19, 2, 5, 1, 1]);
+        vm.stack.extend_from_slice(&[2, 19, 2, 5, 1, 1]);
         vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2, 19, 2, 5, 2));
         vm.step(&mut bc, &mut index, &mut caller).unwrap();
@@ -525,10 +525,10 @@ mod test {
         let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
-        vm.stack.push_all([1, 1, 2]);
+        vm.stack.extend_from_slice(&[1, 1, 2]);
         vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(1));
-        assert_eq!(vm.heap.find(&1), Some(&2));
+        assert_eq!(vm.heap.get(&1), Some(&2));
         vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(2));
         assert!(vm.step(&mut bc, &mut index, &mut caller).is_err());
@@ -552,7 +552,7 @@ mod test {
         let mut vm = super::Machine::new(io::empty(), io::sink());
         let mut caller = vec![];
         let mut index = HashMap::new();
-        vm.stack.push_all([-1, 0]);
+        vm.stack.extend_from_slice(&[-1, 0]);
         vm.step(&mut bc, &mut index, &mut caller).unwrap();
         assert_eq!(vm.stack, vec!(-1, 0));
         vm.step(&mut bc, &mut index, &mut caller).unwrap();
@@ -583,15 +583,15 @@ mod test {
             let mut vm = super::Machine::new(input, output);
             let mut caller = vec![];
             let mut index = HashMap::new();
-            vm.stack.push_all([5, 66, 2, 1]);
+            vm.stack.extend_from_slice(&[5, 66, 2, 1]);
             vm.step(&mut bc, &mut index, &mut caller).unwrap();
             vm.step(&mut bc, &mut index, &mut caller).unwrap();
             vm.step(&mut bc, &mut index, &mut caller).unwrap();
             vm.step(&mut bc, &mut index, &mut caller).unwrap();
             assert!(vm.step(&mut bc, &mut index, &mut caller).is_err());
 
-            heap[0] = *vm.heap.find(&1).unwrap();
-            heap[1] = *vm.heap.find(&2).unwrap();
+            heap[0] = *vm.heap.get(&1).unwrap();
+            heap[1] = *vm.heap.get(&2).unwrap();
         }
         assert!(heap == [87, 123]);
         assert!(buf == [66, 53]);

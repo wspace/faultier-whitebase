@@ -1,6 +1,6 @@
 //! Parser for Brainfuck.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::{self, BufRead, ErrorKind};
 
 use bytecode::ByteCodeWriter;
@@ -18,7 +18,7 @@ pub struct Instructions<T> {
     scount: i64,
     labels: HashMap<String, i64>,
     lcount: i64,
-    buffer: Vec<io::Result<Instruction>>,
+    buffer: VecDeque<io::Result<Instruction>>,
     parsed: bool,
 }
 
@@ -31,14 +31,14 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
             scount: 1,
             labels: HashMap::new(),
             lcount: 1,
-            buffer: Vec::new(),
+            buffer: VecDeque::new(),
             parsed: false,
         }
     }
 
     fn marker(&mut self, label: String) -> i64 {
-        match self.labels.find_copy(&label) {
-            Some(val) => val,
+        match self.labels.get(&label) {
+            Some(&val) => val,
             None => {
                 let val = self.lcount;
                 self.lcount += 1;
@@ -53,7 +53,7 @@ impl<I: Iterator<Item = io::Result<Token>>> Iterator for Instructions<I> {
     type Item = io::Result<Instruction>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.buffer.remove(0) {
+        match self.buffer.pop_front() {
             Some(i) => Some(i),
             None => {
                 let ret = match self.tokens.next() {
@@ -136,8 +136,8 @@ impl<I: Iterator<Item = io::Result<Token>>> Iterator for Instructions<I> {
                         vec![Ok(ir::Exit), Ok(ir::Mark(BF_FAIL_MARKER))]
                     }
                 };
-                self.buffer.push_all(ret.as_slice());
-                self.buffer.remove(0)
+                self.buffer.extend(ret);
+                self.buffer.pop_front()
             }
         }
     }
