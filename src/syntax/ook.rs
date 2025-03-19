@@ -114,8 +114,8 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
         }
 
         match from_utf8(&buf) {
-            Some(string) => Some(Ok(String::from_str(string))),
-            None => Some(Err(ErrorKind::InvalidInput.into())),
+            Ok(string) => Some(Ok(string.into())),
+            Err(err) => Some(Err(io::Error::new(ErrorKind::InvalidInput, err))),
         }
     }
 }

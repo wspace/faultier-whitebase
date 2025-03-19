@@ -7,12 +7,9 @@ use bytecode::{ByteCodeReader, ByteCodeWriter};
 use syntax::{Compiler, Decompiler};
 
 macro_rules! try_number(
-    ($val:expr) => (match from_str($val) {
-        Some(n) => n,
-        None => return Err(io::Error::new(
-            ErrorKind::InvalidInput,
-            format!("invalid value format: expected number, but {}", $val),
-        )),
+    ($val:expr) => (match $val.parse() {
+        Ok(n) => n,
+        Err(err) => return Err(io::Error::new(ErrorKind::InvalidInput, err)),
     })
 );
 

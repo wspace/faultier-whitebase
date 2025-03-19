@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 use std::io::{self, BufRead, ErrorKind, Write};
-use std::num::from_str_radix;
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
 use ir;
@@ -84,9 +83,9 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
     fn parse_number(&mut self) -> io::Result<i64> {
         let positive = self.parse_sign()?;
         let value = self.parse_value()?;
-        match from_str_radix::<i64>(&value, 2) {
-            Some(n) => Ok(if positive { n } else { n * -1 }),
-            None => Err(ErrorKind::InvalidInput.into()),
+        match i64::from_str_radix(&value, 2) {
+            Ok(n) => Ok(if positive { n } else { n * -1 }),
+            Err(err) => Err(io::Error::new(ErrorKind::InvalidInput, err)),
         }
     }
 

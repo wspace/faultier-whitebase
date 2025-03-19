@@ -439,13 +439,13 @@ impl<B: BufRead, W: Write> Machine<B, W> {
 
     fn get_num(&mut self) -> MachineResult<()> {
         match self.stdin.read_line() {
-            Ok(line) => match from_str(line.replace("\n", "").as_slice()) {
-                Some(n) => {
+            Ok(line) => match line.replace("\n", "").parse() {
+                Ok(n) => {
                     self.stack.push(n);
                     self.store()?;
                     Ok(())
                 }
-                None => Err(MachineIoError(ErrorKind::InvalidInput.into())),
+                Err(err) => Err(MachineIoError(io::Error::new(ErrorKind::InvalidInput, err))),
             },
             Err(err) => Err(MachineIoError(err)),
         }
