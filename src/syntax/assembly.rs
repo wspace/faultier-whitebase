@@ -29,49 +29,49 @@ impl Compiler for Assembly {
         input: &mut B,
         output: &mut W,
     ) -> io::Result<()> {
-        while let Some(line) = input.read_line() {
-            match line {
-                Ok(line) => {
-                    let inst = line.replace("\n", "");
-                    if inst.len() == 0 {
-                        continue;
-                    }
-                    if inst.starts_with(';') {
-                        continue;
-                    }
-                    let (mnemonic, val) = match inst.find(' ') {
-                        Some(n) => (&inst[..n], &inst[n + 1..]),
-                        None => (inst.as_str(), ""),
-                    };
-                    match mnemonic {
-                        "PUSH" => output.write_push(try_number!(val)),
-                        "DUP" => output.write_dup(),
-                        "COPY" => output.write_copy(try_number!(val)),
-                        "SWAP" => output.write_swap(),
-                        "DISCARD" => output.write_discard(),
-                        "SLIDE" => output.write_slide(try_number!(val)),
-                        "ADD" => output.write_add(),
-                        "SUB" => output.write_sub(),
-                        "MUL" => output.write_mul(),
-                        "DIV" => output.write_div(),
-                        "MOD" => output.write_mod(),
-                        "STORE" => output.write_store(),
-                        "RETRIEVE" => output.write_retrieve(),
-                        "MARK" => output.write_mark(try_number!(val)),
-                        "CALL" => output.write_call(try_number!(val)),
-                        "JUMP" => output.write_jump(try_number!(val)),
-                        "JUMPZ" => output.write_jumpz(try_number!(val)),
-                        "JUMPN" => output.write_jumpn(try_number!(val)),
-                        "RETURN" => output.write_return(),
-                        "EXIT" => output.write_exit(),
-                        "PUTC" => output.write_putc(),
-                        "PUTN" => output.write_putn(),
-                        "GETC" => output.write_getc(),
-                        "GETN" => output.write_getn(),
-                        _ => Err(ErrorKind::InvalidInput.into()),
-                    }
-                }
-                Err(e) => Err(e),
+        let mut line = String::new();
+        loop {
+            line.clear();
+            if input.read_line(&mut line)? == 0 {
+                break;
+            }
+            let inst = line.replace("\n", "");
+            if inst.len() == 0 {
+                continue;
+            }
+            if inst.starts_with(';') {
+                continue;
+            }
+            let (mnemonic, val) = match inst.find(' ') {
+                Some(n) => (&inst[..n], &inst[n + 1..]),
+                None => (inst.as_str(), ""),
+            };
+            match mnemonic {
+                "PUSH" => output.write_push(try_number!(val)),
+                "DUP" => output.write_dup(),
+                "COPY" => output.write_copy(try_number!(val)),
+                "SWAP" => output.write_swap(),
+                "DISCARD" => output.write_discard(),
+                "SLIDE" => output.write_slide(try_number!(val)),
+                "ADD" => output.write_add(),
+                "SUB" => output.write_sub(),
+                "MUL" => output.write_mul(),
+                "DIV" => output.write_div(),
+                "MOD" => output.write_mod(),
+                "STORE" => output.write_store(),
+                "RETRIEVE" => output.write_retrieve(),
+                "MARK" => output.write_mark(try_number!(val)),
+                "CALL" => output.write_call(try_number!(val)),
+                "JUMP" => output.write_jump(try_number!(val)),
+                "JUMPZ" => output.write_jumpz(try_number!(val)),
+                "JUMPN" => output.write_jumpn(try_number!(val)),
+                "RETURN" => output.write_return(),
+                "EXIT" => output.write_exit(),
+                "PUTC" => output.write_putc(),
+                "PUTN" => output.write_putn(),
+                "GETC" => output.write_getc(),
+                "GETN" => output.write_getn(),
+                _ => Err(ErrorKind::InvalidInput.into()),
             }?;
         }
         Ok(())
