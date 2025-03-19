@@ -54,6 +54,7 @@ pub fn version() -> String {
 }
 
 pub mod bytecode;
+pub(crate) mod io;
 pub mod ir;
 pub mod machine;
 pub mod syntax;

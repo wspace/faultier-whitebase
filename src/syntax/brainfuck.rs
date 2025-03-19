@@ -4,6 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use std::io::{self, BufRead, ErrorKind};
 
 use bytecode::ByteCodeWriter;
+use io::BufReadExt;
 use ir;
 use ir::Instruction;
 use syntax::Compiler;
@@ -217,9 +218,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                 Ok('[') => '[',
                 Ok(']') => ']',
                 Ok(_) => continue,
-                Err(io::Error {
-                    kind: EndOfFile, ..
-                }) => return None,
+                Err(err) if err.kind() == ErrorKind::UnexpectedEof => return None,
                 Err(e) => return Some(Err(e)),
             };
             return Some(Ok(ret));

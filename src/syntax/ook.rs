@@ -4,6 +4,7 @@ use std::io::{self, BufRead, ErrorKind};
 use std::str::from_utf8;
 
 use bytecode::ByteCodeWriter;
+use io::BufReadExt;
 use syntax::brainfuck::{
     Decrement, Get, Increment, Instructions, LoopEnd, LoopStart, MoveLeft, MoveRight, Put, Token,
 };
@@ -78,9 +79,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
             match self.buffer.read_char() {
                 Ok(ref c) if is_whitespace(c) => (),
                 Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
-                Err(io::Error {
-                    kind: EndOfFile, ..
-                }) => return None,
+                Err(err) if err.kind() == ErrorKind::UnexpectedEof => return None,
                 Err(e) => return Some(Err(e)),
             }
             // skip linebreak
@@ -91,9 +90,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                         buf[0] = c as u8;
                         break;
                     }
-                    Err(io::Error {
-                        kind: EndOfFile, ..
-                    }) => return None,
+                    Err(err) if err.kind() == ErrorKind::UnexpectedEof => return None,
                     Err(e) => return Some(Err(e)),
                 }
             }

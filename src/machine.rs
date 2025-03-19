@@ -8,6 +8,7 @@ use log::debug;
 
 use bytecode;
 use bytecode::ByteCodeReader;
+use io::BufReadExt;
 
 pub type MachineResult<T> = Result<T, MachineError>;
 

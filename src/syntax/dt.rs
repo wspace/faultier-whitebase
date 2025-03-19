@@ -3,6 +3,7 @@
 use std::io::{self, BufRead, ErrorKind, Write};
 
 use bytecode::{ByteCodeReader, ByteCodeWriter};
+use io::BufReadExt;
 use ir;
 use syntax::whitespace::{Instructions, Space, Tab, Token, LF};
 use syntax::{Compiler, Decompiler};
@@ -77,9 +78,7 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
                     return Some(Ok(T.to_string()));
                 }
                 Ok(_) => continue,
-                Err(io::Error {
-                    kind: EndOfFile, ..
-                }) => return None,
+                Err(err) if err.kind() == ErrorKind::UnexpectedEof => return None,
                 Err(e) => return Some(Err(e)),
             }
         }
