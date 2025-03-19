@@ -57,7 +57,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
     }
 
     /// Run program.
-    pub fn run(&mut self, program: &mut ByteCodeReader) -> MachineResult<()> {
+    pub fn run<R: ByteCodeReader>(&mut self, program: &mut R) -> MachineResult<()> {
         let mut index = HashMap::new();
         let mut caller = vec![];
         loop {
@@ -69,9 +69,9 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
     }
 
-    fn step(
+    fn step<R: ByteCodeReader>(
         &mut self,
-        program: &mut ByteCodeReader,
+        program: &mut R,
         index: &mut HashMap<i64, u64>,
         caller: &mut Vec<u64>,
     ) -> MachineResult<bool> {
@@ -312,9 +312,9 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
     }
 
-    fn mark(
+    fn mark<R: ByteCodeReader>(
         &mut self,
-        program: &mut ByteCodeReader,
+        program: &mut R,
         index: &mut HashMap<i64, u64>,
         label: i64,
     ) -> MachineResult<()> {
@@ -327,9 +327,9 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
     }
 
-    fn call(
+    fn call<R: ByteCodeReader>(
         &mut self,
-        program: &mut ByteCodeReader,
+        program: &mut R,
         index: &mut HashMap<i64, u64>,
         caller: &mut Vec<u64>,
         label: &i64,
@@ -343,9 +343,9 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
     }
 
-    fn jump(
+    fn jump<R: ByteCodeReader>(
         &mut self,
-        program: &mut ByteCodeReader,
+        program: &mut R,
         index: &mut HashMap<i64, u64>,
         label: &i64,
     ) -> MachineResult<()> {
@@ -375,9 +375,9 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
     }
 
-    fn jump_if(
+    fn jump_if<R: ByteCodeReader>(
         &mut self,
-        program: &mut ByteCodeReader,
+        program: &mut R,
         index: &mut HashMap<i64, u64>,
         label: &i64,
         test: impl FnOnce(i64) -> bool,
@@ -389,9 +389,9 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         }
     }
 
-    fn do_return(
+    fn do_return<R: ByteCodeReader>(
         &mut self,
-        program: &mut ByteCodeReader,
+        program: &mut R,
         caller: &mut Vec<u64>,
     ) -> MachineResult<()> {
         match caller.pop() {
