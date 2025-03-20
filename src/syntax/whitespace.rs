@@ -16,7 +16,7 @@ macro_rules! write_num (
             "{}{}",
             $cmd,
             if $n < 0 {
-                format!("\t{:b}\n", $n * -1)
+                format!("\t{:b}\n", -$n)
             } else {
                 format!(" {:b}\n", $n)
             }
@@ -85,7 +85,7 @@ impl<I: Iterator<Item = io::Result<Token>>> Instructions<I> {
         let positive = self.parse_sign()?;
         let value = self.parse_value()?;
         match i64::from_str_radix(&value, 2) {
-            Ok(n) => Ok(if positive { n } else { n * -1 }),
+            Ok(n) => Ok(if positive { n } else { -n }),
             Err(err) => Err(io::Error::new(ErrorKind::InvalidInput, err)),
         }
     }
@@ -251,12 +251,7 @@ impl<I: Iterator<Item = io::Result<char>>> Iterator for Tokens<I> {
     type Item = io::Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let c = self.lexemes.next();
-        if c.is_none() {
-            return None;
-        }
-
-        Some(match c.unwrap() {
+        Some(match self.lexemes.next()? {
             Ok(' ') => Ok(Space),
             Ok('\t') => Ok(Tab),
             Ok('\n') => Ok(LF),
@@ -276,7 +271,7 @@ impl<'r, B: BufRead> Scan<'r, B> {
     }
 }
 
-impl<'r, B: BufRead> Iterator for Scan<'r, B> {
+impl<B: BufRead> Iterator for Scan<'_, B> {
     type Item = io::Result<char>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -294,8 +289,8 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: BufRead>(buffer: &'r mut B) -> Scan<'r, B> {
-    Scan { buffer: buffer }
+fn scan<B: BufRead>(buffer: &mut B) -> Scan<'_, B> {
+    Scan { buffer }
 }
 
 /// Compiler and Decompiler for Whitespace.

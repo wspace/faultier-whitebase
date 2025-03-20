@@ -24,18 +24,12 @@ impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
     type Item = io::Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let op = self.lexemes.next();
-        if op.is_none() {
-            return None;
-        }
-
-        let res = op.unwrap();
-        match res {
+        let op = match self.lexemes.next()? {
+            Ok(op) => op,
             Err(e) => return Some(Err(e)),
-            Ok(_) => (),
-        }
+        };
 
-        Some(match res.unwrap().as_str() {
+        Some(match op.as_str() {
             "Ook. Ook?" => Ok(MoveRight),
             "Ook? Ook." => Ok(MoveLeft),
             "Ook. Ook." => Ok(Increment),
@@ -68,7 +62,7 @@ impl<'r, B: BufRead> Scan<'r, B> {
     }
 }
 
-impl<'r, B: BufRead> Iterator for Scan<'r, B> {
+impl<B: BufRead> Iterator for Scan<'_, B> {
     type Item = io::Result<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -117,9 +111,9 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: BufRead>(buffer: &'r mut B) -> Scan<'r, B> {
+fn scan<B: BufRead>(buffer: &mut B) -> Scan<'_, B> {
     Scan {
-        buffer: buffer,
+        buffer,
         is_start: true,
     }
 }

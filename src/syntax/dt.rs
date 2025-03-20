@@ -8,9 +8,9 @@ use crate::ir;
 use crate::syntax::whitespace::{Instructions, Space, Tab, Token, LF};
 use crate::syntax::{Compiler, Decompiler};
 
-const S: &'static str = "ど";
-const T: &'static str = "童貞ちゃうわっ！";
-const N: &'static str = "…";
+const S: &str = "ど";
+const T: &str = "童貞ちゃうわっ！";
+const N: &str = "…";
 
 struct Tokens<T> {
     lexemes: T,
@@ -26,18 +26,12 @@ impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
     type Item = io::Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let op = self.lexemes.next();
-        if op.is_none() {
-            return None;
-        }
-
-        let res = op.unwrap();
-        match res {
+        let op = match self.lexemes.next()? {
+            Ok(op) => op,
             Err(e) => return Some(Err(e)),
-            Ok(_) => (),
-        }
+        };
 
-        Some(match res.unwrap().as_str() {
+        Some(match op.as_str() {
             S => Ok(Space),
             T => Ok(Tab),
             N => Ok(LF),
@@ -56,7 +50,7 @@ impl<'r, B: BufRead> Scan<'r, B> {
     }
 }
 
-impl<'r, B: BufRead> Iterator for Scan<'r, B> {
+impl<B: BufRead> Iterator for Scan<'_, B> {
     type Item = io::Result<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -85,8 +79,8 @@ impl<'r, B: BufRead> Iterator for Scan<'r, B> {
     }
 }
 
-fn scan<'r, B: BufRead>(buffer: &'r mut B) -> Scan<'r, B> {
-    Scan { buffer: buffer }
+fn scan<B: BufRead>(buffer: &mut B) -> Scan<'_, B> {
+    Scan { buffer }
 }
 
 /// Compiler and Decompiler for DT.
@@ -105,7 +99,7 @@ impl DT {
 
     #[inline]
     fn write_num<W: Write>(&self, output: &mut W, cmd: &[&'static str], n: i64) -> io::Result<()> {
-        let (flag, value) = if n < 0 { (T, n * -1) } else { (S, n) };
+        let (flag, value) = if n < 0 { (T, -n) } else { (S, n) };
         write!(
             output,
             "{}{}{}{}",

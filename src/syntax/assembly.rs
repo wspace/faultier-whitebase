@@ -36,7 +36,7 @@ impl Compiler for Assembly {
                 break;
             }
             let inst = line.replace("\n", "");
-            if inst.len() == 0 {
+            if inst.is_empty() {
                 continue;
             }
             if inst.starts_with(';') {

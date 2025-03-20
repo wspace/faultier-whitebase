@@ -52,8 +52,8 @@ impl<B: BufRead, W: Write> Machine<B, W> {
         Machine {
             stack: Vec::new(),
             heap: BTreeMap::new(),
-            stdin: stdin,
-            stdout: stdout,
+            stdin,
+            stdout,
         }
     }
 
@@ -275,7 +275,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
 
     fn dcalc(&mut self, divf: impl FnOnce(i64, i64) -> i64) -> MachineResult<()> {
         match self.stack.pop() {
-            Some(x) if x == 0 => Err(ZeroDivision),
+            Some(0) => Err(ZeroDivision),
             Some(x) => match self.stack.pop() {
                 Some(y) => {
                     self.stack.push(divf(x, y));
@@ -324,7 +324,7 @@ impl<B: BufRead, W: Write> Machine<B, W> {
                 index.insert(label, pos);
                 Ok(())
             }
-            Err(err) => return Err(MachineIoError(err)),
+            Err(err) => Err(MachineIoError(err)),
         }
     }
 
@@ -593,7 +593,7 @@ mod test {
             heap[0] = *vm.heap.get(&1).unwrap();
             heap[1] = *vm.heap.get(&2).unwrap();
         }
-        assert!(heap == [87, 123]);
-        assert!(buf == [66, 53]);
+        assert_eq!(heap, [87, 123]);
+        assert_eq!(buf, [66, 53]);
     }
 }

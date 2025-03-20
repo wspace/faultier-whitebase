@@ -29,8 +29,6 @@ fn main() {
 ```
 */
 
-#![warn(missing_docs)]
-
 pub const VERSION_MAJOR: usize = 0;
 pub const VERSION_MINOR: usize = 1;
 pub const VERSION_TINY: usize = 0;

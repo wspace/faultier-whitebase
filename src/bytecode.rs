@@ -241,7 +241,7 @@ pub struct Instructions<'r, T: ?Sized> {
     reader: &'r mut T,
 }
 
-impl<'r, B: ByteCodeReader> Iterator for Instructions<'r, B> {
+impl<B: ByteCodeReader> Iterator for Instructions<'_, B> {
     type Item = io::Result<Instruction>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -293,7 +293,7 @@ pub trait ByteCodeReader: Read + Seek {
     ///
     /// Any error that is produced by the underlying `Read`er is returned by the
     /// iterator and should be handled by the caller.
-    fn disassemble<'r>(&'r mut self) -> Instructions<'r, Self> {
+    fn disassemble(&mut self) -> Instructions<'_, Self> {
         Instructions { reader: self }
     }
 }
