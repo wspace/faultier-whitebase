@@ -1,34 +1,35 @@
 //! Parser for Ook!
 
-#![experimental]
-
-use std::io::{EndOfFile, InvalidInput, IoError, IoResult, standard_error};
+use std::io::{self, BufRead, ErrorKind};
 use std::str::from_utf8;
 
-use bytecode::ByteCodeWriter;
-use syntax::Compiler;
-use syntax::brainfuck::{Instructions, Token, MoveRight, MoveLeft, Increment, Decrement, Put, Get, LoopStart, LoopEnd};
+use crate::bytecode::ByteCodeWriter;
+use crate::io::BufReadExt;
+use crate::syntax::brainfuck::{
+    Decrement, Get, Increment, Instructions, LoopEnd, LoopStart, MoveLeft, MoveRight, Put, Token,
+};
+use crate::syntax::Compiler;
 
 struct Tokens<T> {
     lexemes: T,
 }
 
-impl<I: Iterator<IoResult<String>>> Tokens<I> {
-    pub fn parse(self) -> Instructions<Tokens<I>> { Instructions::new(self) }
+impl<I: Iterator<Item = io::Result<String>>> Tokens<I> {
+    pub fn parse(self) -> Instructions<Tokens<I>> {
+        Instructions::new(self)
+    }
 }
 
-impl<I: Iterator<IoResult<String>>> Iterator<IoResult<Token>> for Tokens<I> {
-    fn next(&mut self) -> Option<IoResult<Token>> {
-        let op = self.lexemes.next();
-        if op.is_none() { return None; }
+impl<I: Iterator<Item = io::Result<String>>> Iterator for Tokens<I> {
+    type Item = io::Result<Token>;
 
-        let res = op.unwrap();
-         match res {
-             Err(e) => return Some(Err(e)),
-             Ok(_) => (),
-        }
+    fn next(&mut self) -> Option<Self::Item> {
+        let op = match self.lexemes.next()? {
+            Ok(op) => op,
+            Err(e) => return Some(Err(e)),
+        };
 
-        Some(match res.unwrap().as_slice() {
+        Some(match op.as_str() {
             "Ook. Ook?" => Ok(MoveRight),
             "Ook? Ook." => Ok(MoveLeft),
             "Ook. Ook." => Ok(Increment),
@@ -37,7 +38,7 @@ impl<I: Iterator<IoResult<String>>> Iterator<IoResult<Token>> for Tokens<I> {
             "Ook! Ook." => Ok(Put),
             "Ook! Ook?" => Ok(LoopStart),
             "Ook? Ook!" => Ok(LoopEnd),
-            _ => Err(standard_error(InvalidInput)),
+            _ => Err(ErrorKind::InvalidInput.into()),
         })
     }
 }
@@ -55,20 +56,24 @@ struct Scan<'r, T> {
     is_start: bool,
 }
 
-impl<'r, B: Buffer> Scan<'r, B> {
-    pub fn tokenize(self) -> Tokens<Scan<'r, B>> { Tokens { lexemes: self } }
+impl<'r, B: BufRead> Scan<'r, B> {
+    pub fn tokenize(self) -> Tokens<Scan<'r, B>> {
+        Tokens { lexemes: self }
+    }
 }
 
-impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
-    fn next(&mut self) -> Option<IoResult<String>> {
-        let mut buf = [0u8, ..9];
+impl<B: BufRead> Iterator for Scan<'_, B> {
+    type Item = io::Result<String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut buf = [0u8; 9];
 
         if !self.is_start {
             // skip separator
             match self.buffer.read_char() {
                 Ok(ref c) if is_whitespace(c) => (),
-                Ok(_) => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+                Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
+                Err(err) if err.kind() == ErrorKind::UnexpectedEof => return None,
                 Err(e) => return Some(Err(e)),
             }
             // skip linebreak
@@ -78,36 +83,39 @@ impl<'r, B: Buffer> Iterator<IoResult<String>> for Scan<'r, B> {
                     Ok(c) => {
                         buf[0] = c as u8;
                         break;
-                    },
-                    Err(IoError { kind: EndOfFile, ..}) => return None,
+                    }
+                    Err(err) if err.kind() == ErrorKind::UnexpectedEof => return None,
                     Err(e) => return Some(Err(e)),
                 }
             }
-            match self.buffer.read(buf.mut_slice_from(1)) {
-                Ok(n) if n == 8 => (),
-                Ok(_)  => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+            match self.buffer.read(&mut buf[1..]) {
+                Ok(8) => {}
+                Ok(0) => return None,
+                Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
                 Err(e) => return Some(Err(e)),
             }
         } else {
-            match self.buffer.read(buf) {
-                Ok(n) if n == 9 => (),
-                Ok(_) => return Some(Err(standard_error(InvalidInput))),
-                Err(IoError { kind: EndOfFile, ..}) => return None,
+            match self.buffer.read(&mut buf) {
+                Ok(9) => {}
+                Ok(0) => return None,
+                Ok(_) => return Some(Err(ErrorKind::InvalidInput.into())),
                 Err(e) => return Some(Err(e)),
             }
             self.is_start = false;
         }
 
-        match from_utf8(buf) {
-            Some(string) => Some(Ok(String::from_str(string))),
-            None => Some(Err(standard_error(InvalidInput))),
+        match from_utf8(&buf) {
+            Ok(string) => Some(Ok(string.into())),
+            Err(err) => Some(Err(io::Error::new(ErrorKind::InvalidInput, err))),
         }
     }
 }
 
-fn scan<'r, B: Buffer>(buffer: &'r mut B) -> Scan<'r, B> {
-    Scan { buffer: buffer, is_start: true }
+fn scan<B: BufRead>(buffer: &mut B) -> Scan<'_, B> {
+    Scan {
+        buffer,
+        is_start: true,
+    }
 }
 
 /// Compiler for Ook!.
@@ -115,11 +123,17 @@ pub struct Ook;
 
 impl Ook {
     /// Create a new `Ook`.
-    pub fn new() -> Ook { Ook }
+    pub fn new() -> Ook {
+        Ook
+    }
 }
 
 impl Compiler for Ook {
-    fn compile<B: Buffer, W: ByteCodeWriter>(&self, input: &mut B, output: &mut W) -> IoResult<()> {
+    fn compile<B: BufRead, W: ByteCodeWriter>(
+        &self,
+        input: &mut B,
+        output: &mut W,
+    ) -> io::Result<()> {
         let mut it = scan(input).tokenize().parse();
         output.assemble(&mut it)
     }
@@ -127,22 +141,25 @@ impl Compiler for Ook {
 
 #[cfg(test)]
 mod test {
-    use std::io::BufReader;
-    use syntax::brainfuck::{MoveRight, MoveLeft, Increment, Decrement, Put, Get, LoopStart, LoopEnd};
+    use std::io::{self, Cursor};
+
+    use crate::syntax::brainfuck::{
+        Decrement, Get, Increment, LoopEnd, LoopStart, MoveLeft, MoveRight, Put,
+    };
 
     #[test]
     fn test_scan() {
-        let mut buffer = BufReader::new("Ook? Ook. Ook! Ook.\nOok. Ook? Ook.".as_bytes());
+        let mut buffer = Cursor::new("Ook? Ook. Ook! Ook.\nOok. Ook? Ook.".as_bytes());
         let mut it = super::scan(&mut buffer);
-        assert_eq!(it.next(), Some(Ok("Ook? Ook.".to_string())));
-        assert_eq!(it.next(), Some(Ok("Ook! Ook.".to_string())));
-        assert_eq!(it.next(), Some(Ok("Ook. Ook?".to_string())));
+        assert_eq!(it.next().unwrap().unwrap(), "Ook? Ook.");
+        assert_eq!(it.next().unwrap().unwrap(), "Ook! Ook.");
+        assert_eq!(it.next().unwrap().unwrap(), "Ook. Ook?");
         assert!(it.next().unwrap().is_err());
     }
 
     #[test]
     fn test_tokenize() {
-        let source = vec!(
+        let source = vec![
             "Ook. Ook?",
             "Ook? Ook.",
             "Ook. Ook.",
@@ -151,17 +168,13 @@ mod test {
             "Ook! Ook.",
             "Ook! Ook?",
             "Ook? Ook!",
-            ).connect(" ");
-        let mut buffer = BufReader::new(source.as_slice().as_bytes());
-        let mut it = super::scan(&mut buffer).tokenize();
-        assert_eq!(it.next(), Some(Ok(MoveRight)));
-        assert_eq!(it.next(), Some(Ok(MoveLeft)));
-        assert_eq!(it.next(), Some(Ok(Increment)));
-        assert_eq!(it.next(), Some(Ok(Decrement)));
-        assert_eq!(it.next(), Some(Ok(Get)));
-        assert_eq!(it.next(), Some(Ok(Put)));
-        assert_eq!(it.next(), Some(Ok(LoopStart)));
-        assert_eq!(it.next(), Some(Ok(LoopEnd)));
-        assert!(it.next().is_none());
+        ]
+        .join(" ");
+        let mut buffer = Cursor::new(source.as_bytes());
+        let it = super::scan(&mut buffer).tokenize();
+        let expected = &[
+            MoveRight, MoveLeft, Increment, Decrement, Get, Put, LoopStart, LoopEnd,
+        ];
+        assert_eq!(it.collect::<io::Result<Vec<_>>>().unwrap(), expected);
     }
 }

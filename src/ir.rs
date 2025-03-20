@@ -1,9 +1,7 @@
 //! Intermediate representations of instruction set.
 
-#![stable]
-
-#[allow(missing_doc)]
-#[deriving(PartialEq, Eq, Clone, Hash, Show)]
+#[allow(missing_docs)]
+#[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub enum Instruction {
     StackPush(i64),
     StackDuplicate,
@@ -30,3 +28,5 @@ pub enum Instruction {
     GetCharactor,
     GetNumber,
 }
+
+pub use self::Instruction::*;
