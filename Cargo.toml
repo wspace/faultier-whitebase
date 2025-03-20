@@ -1,8 +1,9 @@
 [package]
 name = "whitebase"
-version = "0.1.0-pre"
+version = "0.2.0"
 authors = ["faultier"]
 edition = "2021"
+repository = "https://github.com/wspace/faultier-whitebase"
 
 [lib]
 name = "whitebase"
