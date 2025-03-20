@@ -4,8 +4,6 @@
 parsers and generators, and assembly language.
 
 ```rust
-extern crate whitebase;
-
 use std::io::{Cursor, Seek, SeekFrom};
 
 use whitebase::machine;
@@ -31,11 +29,7 @@ fn main() {
 ```
 */
 
-#![crate_name = "whitebase"]
-#![crate_type = "rlib"]
 #![warn(missing_docs)]
-
-extern crate log;
 
 pub const VERSION_MAJOR: usize = 0;
 pub const VERSION_MINOR: usize = 1;

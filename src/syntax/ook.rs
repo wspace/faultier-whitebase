@@ -3,12 +3,12 @@
 use std::io::{self, BufRead, ErrorKind};
 use std::str::from_utf8;
 
-use bytecode::ByteCodeWriter;
-use io::BufReadExt;
-use syntax::brainfuck::{
+use crate::bytecode::ByteCodeWriter;
+use crate::io::BufReadExt;
+use crate::syntax::brainfuck::{
     Decrement, Get, Increment, Instructions, LoopEnd, LoopStart, MoveLeft, MoveRight, Put, Token,
 };
-use syntax::Compiler;
+use crate::syntax::Compiler;
 
 struct Tokens<T> {
     lexemes: T,
@@ -149,7 +149,7 @@ impl Compiler for Ook {
 mod test {
     use std::io::{self, Cursor};
 
-    use syntax::brainfuck::{
+    use crate::syntax::brainfuck::{
         Decrement, Get, Increment, LoopEnd, LoopStart, MoveLeft, MoveRight, Put,
     };
 

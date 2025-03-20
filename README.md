@@ -16,8 +16,6 @@ This project provides infrastructure for implementing esolang.
 ### Compile and execute
 
 ```rust
-extern crate whitebase;
-
 use std::io::{Cursor, Seek, SeekFrom};
 
 use whitebase::machine;

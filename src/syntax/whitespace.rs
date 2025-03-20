@@ -3,11 +3,11 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead, ErrorKind, Write};
 
-use bytecode::{ByteCodeReader, ByteCodeWriter};
-use io::BufReadExt;
-use ir;
-use ir::Instruction;
-use syntax::{Compiler, Decompiler};
+use crate::bytecode::{ByteCodeReader, ByteCodeWriter};
+use crate::io::BufReadExt;
+use crate::ir;
+use crate::ir::Instruction;
+use crate::syntax::{Compiler, Decompiler};
 
 macro_rules! write_num (
     ($w:expr, $cmd:expr, $n:expr) => (
@@ -363,9 +363,9 @@ mod test {
     use std::io::{self, Cursor, Seek, SeekFrom};
     use std::str::from_utf8;
 
-    use bytecode::ByteCodeWriter;
-    use ir::*;
-    use syntax::Decompiler;
+    use crate::bytecode::ByteCodeWriter;
+    use crate::ir::*;
+    use crate::syntax::Decompiler;
 
     #[test]
     fn test_scan() {

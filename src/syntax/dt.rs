@@ -2,11 +2,11 @@
 
 use std::io::{self, BufRead, ErrorKind, Write};
 
-use bytecode::{ByteCodeReader, ByteCodeWriter};
-use io::BufReadExt;
-use ir;
-use syntax::whitespace::{Instructions, Space, Tab, Token, LF};
-use syntax::{Compiler, Decompiler};
+use crate::bytecode::{ByteCodeReader, ByteCodeWriter};
+use crate::io::BufReadExt;
+use crate::ir;
+use crate::syntax::whitespace::{Instructions, Space, Tab, Token, LF};
+use crate::syntax::{Compiler, Decompiler};
 
 const S: &'static str = "ど";
 const T: &'static str = "童貞ちゃうわっ！";
@@ -172,9 +172,9 @@ mod test {
     use std::io::{self, Cursor, Seek, SeekFrom};
     use std::str::from_utf8;
 
-    use bytecode::ByteCodeWriter;
-    use syntax::whitespace::{Space, Tab, LF};
-    use syntax::Decompiler;
+    use crate::bytecode::ByteCodeWriter;
+    use crate::syntax::whitespace::{Space, Tab, LF};
+    use crate::syntax::Decompiler;
 
     const S: &'static str = "ど";
     const T: &'static str = "童貞ちゃうわっ！";

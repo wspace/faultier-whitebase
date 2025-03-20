@@ -2,8 +2,8 @@
 
 use std::io::{self, ErrorKind, Read, Seek, Write};
 
-use ir;
-use ir::Instruction;
+use crate::ir;
+use crate::ir::Instruction;
 
 pub const IMP_STACK: u8 = 0b0011 << 4;
 pub const IMP_ARITHMETIC: u8 = 0b1000 << 4;
@@ -326,7 +326,7 @@ mod test {
     use std::io::{self, Cursor, Seek, SeekFrom};
 
     use super::{ByteCodeReader, ByteCodeWriter};
-    use ir;
+    use crate::ir;
 
     #[test]
     fn test_readwrite() {

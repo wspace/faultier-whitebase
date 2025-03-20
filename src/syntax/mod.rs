@@ -8,7 +8,7 @@ pub use self::whitespace::Whitespace;
 
 use std::io::{self, BufRead, Write};
 
-use bytecode::{ByteCodeReader, ByteCodeWriter};
+use crate::bytecode::{ByteCodeReader, ByteCodeWriter};
 
 /// Convert from source code to bytecodes.
 pub trait Compiler {

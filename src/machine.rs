@@ -6,9 +6,9 @@ use std::io::{self, stdin, stdout, BufRead, BufReader, ErrorKind, SeekFrom, Stdi
 
 use log::debug;
 
-use bytecode;
-use bytecode::ByteCodeReader;
-use io::BufReadExt;
+use crate::bytecode;
+use crate::bytecode::ByteCodeReader;
+use crate::io::BufReadExt;
 
 pub type MachineResult<T> = Result<T, MachineError>;
 
@@ -457,7 +457,7 @@ mod test {
     use std::collections::HashMap;
     use std::io::{self, Cursor, Seek, SeekFrom};
 
-    use bytecode::ByteCodeWriter;
+    use crate::bytecode::ByteCodeWriter;
 
     #[test]
     fn test_stack() {

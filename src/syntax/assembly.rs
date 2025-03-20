@@ -2,9 +2,9 @@
 
 use std::io::{self, BufRead, ErrorKind, Write};
 
-use bytecode;
-use bytecode::{ByteCodeReader, ByteCodeWriter};
-use syntax::{Compiler, Decompiler};
+use crate::bytecode;
+use crate::bytecode::{ByteCodeReader, ByteCodeWriter};
+use crate::syntax::{Compiler, Decompiler};
 
 macro_rules! try_number(
     ($val:expr) => (match $val.parse() {
@@ -123,9 +123,9 @@ mod test {
     use std::io::{Cursor, Seek, SeekFrom};
     use std::str::from_utf8;
 
-    use bytecode;
-    use bytecode::{ByteCodeReader, ByteCodeWriter};
-    use syntax::{Compiler, Decompiler};
+    use crate::bytecode;
+    use crate::bytecode::{ByteCodeReader, ByteCodeWriter};
+    use crate::syntax::{Compiler, Decompiler};
 
     #[test]
     fn test_assemble() {

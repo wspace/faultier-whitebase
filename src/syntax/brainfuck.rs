@@ -3,11 +3,11 @@
 use std::collections::{HashMap, VecDeque};
 use std::io::{self, BufRead, ErrorKind};
 
-use bytecode::ByteCodeWriter;
-use io::BufReadExt;
-use ir;
-use ir::Instruction;
-use syntax::Compiler;
+use crate::bytecode::ByteCodeWriter;
+use crate::io::BufReadExt;
+use crate::ir;
+use crate::ir::Instruction;
+use crate::syntax::Compiler;
 
 pub const BF_FAIL_MARKER: i64 = -1;
 pub const BF_PTR_ADDR: i64 = -1;
@@ -255,7 +255,7 @@ impl Compiler for Brainfuck {
 mod test {
     use std::io::{self, Cursor};
 
-    use ir::*;
+    use crate::ir::*;
 
     #[test]
     fn test_scan() {
